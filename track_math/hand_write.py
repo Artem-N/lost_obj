@@ -164,5 +164,5 @@ def track_object_in_frame(cap, kalman_filters, prev_gray, screen_widht, screen_h
         prev_gray = resize_frame(curr_gray, screen_widht, screen_height)
 
         diff = calculate_difference(prev_gray, curr_frame)
-        thresh = apply_thresholding(diff, threshold_value, )
+        thresh = apply_thresholding(diff, threshold_value)
 
