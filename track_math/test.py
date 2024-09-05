@@ -100,11 +100,12 @@ def find_largest_contour(contours, min_contour_area):
 
 def update_kalman_filter(kalman, contour):
     """Update the Kalman filter with the position of the detected contour."""
-    # Get the bounding box of the contour
-    (x, y, w, h) = cv2.boundingRect(contour)
+    if contour is None or len(contour) == 0:
+        return None, None  # Handle cases where the contour is invalid
 
-    # Calculate the center position of the bounding box
-    position = (x + w // 2, y + h // 2)
+    # Get the bounding box of the contour
+    (x, y, w, h) = cv2.boundingRect(contour)  # This will now be a valid call
+    position = (x + w // 2, y + h // 2)  # Calculate the center of the bounding box
 
     # Create a measurement matrix with the position
     measurement = np.array([[np.float32(position[0])],
@@ -113,7 +114,8 @@ def update_kalman_filter(kalman, contour):
     # Update the Kalman filter with the current measurement
     kalman.correct(measurement)
 
-    return position, (x, y, w, h)
+    return position, (x, y, w, h)  # Return position and bounding box
+
 
 
 def draw_bounding_box(frame, bbox):
@@ -152,19 +154,24 @@ def display_fps(frame, fps):
 
 def find_closest_contour(contours, last_position):
     """Find the contour closest to the last known position."""
-    if last_position is None:
-        return None, float("inf")  # Return None if last_position is None
+    if last_position is None or not contours:
+        return None  # Return None if last_position or contours are invalid
 
     closest_contour = None
     min_distance = float("inf")
+
     for contour in contours:
-        (x, y, w, h) = cv2.boundingRect(contour)
+        # Get the center of the contour's bounding box
+        (x, y, w, h) = cv2.boundingRect(contour)  # Ensure each contour works with boundingRect
         center = (x + w // 2, y + h // 2)
+
+        # Calculate the Euclidean distance from the last known position
         distance = np.linalg.norm(np.array(center) - np.array(last_position))
         if distance < min_distance:
             min_distance = distance
-            closest_contour = contour
-    return closest_contour, min_distance
+            closest_contour = contour  # Assign the closest contour
+
+    return closest_contour  # Return the closest valid contour
 
 
 def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, threshold_value, min_contour_area, morph_kernel_size,
@@ -269,81 +276,42 @@ def handle_object_tracking(contours, tracked_object, last_position, target_lost_
 def update_tracking_with_contours_and_speed(contours, tracked_object, last_position, target_lost_frames,
                                             target_memory_frames, kalman, curr_frame, trajectory_points, frame_center,
                                             last_bbox_area, last_speed):
-    """Update the Kalman filter, handle contour matching, and check object speed."""
-    bbox_size_threshold = 10
-    draw_box = True  # Initialize the draw flag to true
-    max_distance = 100  # Maximum allowed distance in pixels
-
-    # Set the dynamic speed threshold based on the last tracked object's speed
-    dynamic_speed_threshold = last_speed * 5 if last_speed > 0 else 100  # If last_speed is 0, use the default max speed
+    """Update the Kalman filter, handle contour matching, and check object speed and distance."""
+    max_distance = 500  # Maximum allowed distance in pixels
+    bbox_size_threshold = 10  # Bounding box size threshold
+    dynamic_speed_threshold = last_speed * 5 if last_speed > 0 else 100  # Dynamic speed threshold
 
     if contours:
         # Find the closest contour to the last known position
-        closest_contour, _ = find_closest_contour(contours, last_position)
+        closest_contour = find_closest_contour(contours, last_position)
+
         if closest_contour is not None:
-            # Save the previous position to calculate speed
-            previous_position = last_position if last_position is not None else (0, 0)
+            # Update position and bounding box from Kalman filter
+            last_position, bbox = update_position_and_bbox(kalman, closest_contour)
 
-            # Update Kalman filter with new measurement
-            last_position, bbox = update_kalman_filter(kalman, closest_contour)
-            current_bbox_area = bbox[2] * bbox[3]  # Calculate the new bounding box area
+            # Perform checks for distance, speed, and angle
+            if not is_within_distance(last_position, last_position, max_distance):
+                print(f"Ignored object due to distance > {max_distance} pixels")
+                return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
-            # Calculate the speed of the new object
-            dx = last_position[0] - previous_position[0]
-            dy = last_position[1] - previous_position[1]
-            current_speed = math.sqrt(dx ** 2 + dy ** 2)  # Speed is the Euclidean distance between positions
+            if not is_speed_valid(last_position, last_position, last_speed, dynamic_speed_threshold):
+                print(f"Ignored object due to high speed")
+                return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
-            # Calculate the center of the last known bounding box
-            last_bbox_center = (previous_position[0], previous_position[1])
+            if not is_angle_valid(trajectory_points):
+                print(f"Ignored object due to vertical movement")
+                return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
-            # Calculate the center of the current bounding box
-            current_bbox_center = (last_position[0], last_position[1])
+            # If all checks passed, draw the bounding box and red line
+            if should_draw_bbox(last_bbox_area, bbox, bbox_size_threshold):
+                draw_bounding_box_and_line(curr_frame, bbox, last_position, frame_center)
+                last_bbox_area = bbox[2] * bbox[3]  # Update bounding box area
 
-            # Calculate the distance between the last known center and the current center
-            distance_from_last_bbox = math.sqrt((current_bbox_center[0] - last_bbox_center[0]) ** 2 +
-                                                (current_bbox_center[1] - last_bbox_center[1]) ** 2)
-
-            # Check if the object is too far from the last known bounding box center
-            if distance_from_last_bbox > max_distance:
-                print(f"Ignored object due to distance {distance_from_last_bbox:.2f} > {max_distance} pixels from the last bbox center")
-                draw_box = False  # Ignore objects further than max_distance
-
-            # Check if the current speed exceeds the dynamic speed threshold
-            elif current_speed > dynamic_speed_threshold:
-                # If the speed is too high, ignore the object completely and do nothing
-                print(f"Ignored object with speed {current_speed:.2f}, too fast compared to dynamic threshold {dynamic_speed_threshold:.2f}")
-                draw_box = False  # Prevent drawing if speed is too high
-            else:
-                # Calculate angle of movement if we have at least two trajectory points
-                if len(trajectory_points) >= 2:
-                    dx = trajectory_points[-1][0] - trajectory_points[-2][0]
-                    dy = trajectory_points[-1][1] - trajectory_points[-2][1]
-                    angle = math.degrees(math.atan2(dy, dx))
-
-                    # Check if the object is moving up or down based on the angle
-                    if 85 <= abs(angle) <= 95:  # Between 85 and 95 degrees for vertical motion
-                        print(f"Stopped tracking due to vertical movement (angle: {angle:.2f} degrees)")
-                        draw_box = False  # Prevent drawing if the angle is in the vertical range
-
-            # If speed, distance, and angle conditions are met, draw the bounding box
-            if draw_box:
-                # Check bounding box size and draw if within the allowed range
-                if last_bbox_area is None or current_bbox_area <= bbox_size_threshold * last_bbox_area:
-                    draw_bounding_box(curr_frame, bbox)  # Draw the bounding box
-                    last_bbox_area = current_bbox_area  # Update last_bbox_area with the current one
-                    last_speed = current_speed  # Update the speed of the tracked object
-
-                    # Draw the red line from the center of the frame to the tracked object
-                    bbox_center_x = int(last_position[0])
-                    bbox_center_y = int(last_position[1])
-                    cv2.line(curr_frame, frame_center, (bbox_center_x, bbox_center_y), (0, 0, 255), 1)
-
-                # Add the current position to the trajectory points for angle calculation
-                trajectory_points.append(last_position)
-
-            target_lost_frames = 0
+            # Add the current position to the trajectory points for further calculations
+            trajectory_points.append(last_position)
+            target_lost_frames = 0  # Reset lost frames counter
         else:
-            target_lost_frames += 1
+            target_lost_frames += 1  # No contour found
     else:
         target_lost_frames += 1
 
@@ -355,7 +323,53 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
     return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
 
+def update_position_and_bbox(kalman, closest_contour):
+    """Update the position and bounding box based on Kalman filter and closest contour."""
+    last_position, bbox = update_kalman_filter(kalman, closest_contour)
+    return last_position, bbox
 
+
+def is_within_distance(current_position, previous_position, max_distance):
+    """Check if the current position is within the allowed distance from the previous one."""
+    distance = calculate_distance(current_position, previous_position)
+    return distance <= max_distance
+
+
+def calculate_distance(position1, position2):
+    """Calculate Euclidean distance between two positions."""
+    return math.sqrt((position1[0] - position2[0]) ** 2 + (position1[1] - position2[1]) ** 2)
+
+
+def is_speed_valid(current_position, previous_position, last_speed, dynamic_speed_threshold):
+    """Check if the object's speed is within the allowed dynamic threshold."""
+    dx = current_position[0] - previous_position[0]
+    dy = current_position[1] - previous_position[1]
+    current_speed = math.sqrt(dx ** 2 + dy ** 2)
+    return current_speed <= dynamic_speed_threshold
+
+
+def is_angle_valid(trajectory_points):
+    """Check if the angle of the object's movement is within the allowed range."""
+    if len(trajectory_points) >= 2:
+        dx = trajectory_points[-1][0] - trajectory_points[-2][0]
+        dy = trajectory_points[-1][1] - trajectory_points[-2][1]
+        angle = math.degrees(math.atan2(dy, dx))
+        return not (85 <= abs(angle) <= 95)  # Ignore vertical movement
+    return True  # If we don't have enough points, assume valid
+
+
+def should_draw_bbox(last_bbox_area, bbox, bbox_size_threshold):
+    """Check if the bounding box should be drawn based on its size."""
+    current_bbox_area = bbox[2] * bbox[3]
+    return last_bbox_area is None or current_bbox_area <= bbox_size_threshold * last_bbox_area
+
+
+def draw_bounding_box_and_line(curr_frame, bbox, last_position, frame_center):
+    """Draw the bounding box and red line on the frame."""
+    draw_bounding_box(curr_frame, bbox)  # Draw bounding box
+    bbox_center_x = int(last_position[0])
+    bbox_center_y = int(last_position[1])
+    cv2.line(curr_frame, frame_center, (bbox_center_x, bbox_center_y), (0, 0, 255), 1)  # Draw the red line
 
 
 def main():
