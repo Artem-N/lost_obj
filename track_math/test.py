@@ -254,9 +254,14 @@ def handle_object_tracking(contours, tracked_object, last_position, target_lost_
         dy = trajectory_points[-1][1] - trajectory_points[-2][1]
         angle = math.degrees(math.atan2(dy, dx))
 
+        # Check if the object is moving up or down based on the angle
+        if 70 <= abs(angle) <= 110:  # Between 70 and 110 degrees for vertical motion
+            print(f"Stopped tracking due to vertical movement (angle: {angle:.2f} degrees)")
+            tracked_object = None  # Stop tracking the object
+            return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
+
         # Display the angle on the frame
-        cv2.putText(curr_frame, f"Angle: {angle:.2f} degrees", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255),
-                    2)
+        cv2.putText(curr_frame, f"Angle: {angle:.2f} degrees", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
     return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
@@ -265,6 +270,8 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
                                             target_memory_frames, kalman, curr_frame, trajectory_points, frame_center,
                                             last_bbox_area, last_speed):
     """Update the Kalman filter, handle contour matching, and check object speed."""
+    bbox_size_threshold = 10
+    draw_box = True  # Initialize the draw flag to true
 
     # Set the dynamic speed threshold based on the last tracked object's speed
     dynamic_speed_threshold = last_speed * 5 if last_speed > 0 else 100  # If last_speed is 0, use the default max speed
@@ -289,22 +296,35 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
             if current_speed > dynamic_speed_threshold:
                 # If the speed is too high, ignore the object completely and do nothing
                 print(f"Ignored object with speed {current_speed:.2f}, too fast compared to dynamic threshold {dynamic_speed_threshold:.2f}")
-                return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
-
-            # Check bounding box size and draw if within the allowed range
-            if last_bbox_area is None or current_bbox_area <= 5 * last_bbox_area:
-                draw_bounding_box(curr_frame, bbox)  # Draw the bounding box
-                last_bbox_area = current_bbox_area  # Update last_bbox_area with the current one
-                last_speed = current_speed  # Update the speed of the tracked object
-
-                # Draw the red line from the center of the frame to the tracked object
-                bbox_center_x = int(last_position[0])
-                bbox_center_y = int(last_position[1])
-                cv2.line(curr_frame, frame_center, (bbox_center_x, bbox_center_y), (0, 0, 255), 1)
-
+                draw_box = False  # Prevent drawing if speed is too high
             else:
-                # If the size is too big, ignore it
-                print(f"Ignored object with area {current_bbox_area:.2f}, too large compared to last bbox area")
+                # Calculate angle of movement if we have at least two trajectory points
+                if len(trajectory_points) >= 2:
+                    dx = trajectory_points[-1][0] - trajectory_points[-2][0]
+                    dy = trajectory_points[-1][1] - trajectory_points[-2][1]
+                    angle = math.degrees(math.atan2(dy, dx))
+
+                    # Check if the object is moving up or down based on the angle
+                    if 85 <= abs(angle) <= 95:  # Between 85 and 95 degrees for vertical motion
+                        print(f"Stopped tracking due to vertical movement (angle: {angle:.2f} degrees)")
+                        draw_box = False  # Prevent drawing if the angle is in the vertical range
+
+            # If speed and angle conditions are met, draw the bounding box
+            if draw_box:
+                # Check bounding box size and draw if within the allowed range
+                if last_bbox_area is None or current_bbox_area <= bbox_size_threshold * last_bbox_area:
+                    draw_bounding_box(curr_frame, bbox)  # Draw the bounding box
+                    last_bbox_area = current_bbox_area  # Update last_bbox_area with the current one
+                    last_speed = current_speed  # Update the speed of the tracked object
+
+                    # Draw the red line from the center of the frame to the tracked object
+                    bbox_center_x = int(last_position[0])
+                    bbox_center_y = int(last_position[1])
+                    cv2.line(curr_frame, frame_center, (bbox_center_x, bbox_center_y), (0, 0, 255), 1)
+
+                # Add the current position to the trajectory points for angle calculation
+                trajectory_points.append(last_position)
+
             target_lost_frames = 0
         else:
             target_lost_frames += 1
@@ -315,10 +335,6 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
     if target_lost_frames > target_memory_frames:
         tracked_object = None
         target_lost_frames = 0
-    else:
-        # Only add the trajectory point if the object is being tracked (i.e., not ignored)
-        if tracked_object is not None:
-            trajectory_points.append(last_position)
 
     return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
@@ -327,14 +343,14 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
 def main():
     # Parameters for fine-tuning the algorithm
     THRESHOLD_VALUE = 30  # Threshold value for binary thresholding
-    MIN_CONTOUR_AREA = 50  # Minimum contour area to consider for tracking
+    MIN_CONTOUR_AREA = 20  # Minimum contour area to consider for tracking
     MORPH_KERNEL_SIZE = (7, 7)  # Kernel size for morphological operations
     DILATION_ITERATIONS = 3  # Number of dilation iterations
     EROSION_ITERATIONS = 1  # Number of erosion iterations
     TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
 
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\GeneralPT4S4_2023_09_20_15_29_57.avi"
+    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_40_55.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()
