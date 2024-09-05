@@ -266,7 +266,8 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
                                             last_bbox_area, last_speed):
     """Update the Kalman filter, handle contour matching, and check object speed."""
 
-    max_speed_threshold = 100  # Set a max speed threshold, objects faster than this will be ignored
+    # Set the dynamic speed threshold based on the last tracked object's speed
+    dynamic_speed_threshold = last_speed * 5 if last_speed > 0 else 100  # If last_speed is 0, use the default max speed
 
     if contours:
         # Find the closest contour to the last known position
@@ -284,10 +285,10 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
             dy = last_position[1] - previous_position[1]
             current_speed = math.sqrt(dx ** 2 + dy ** 2)  # Speed is the Euclidean distance between positions
 
-            # Check if the current speed exceeds the maximum speed threshold
-            if current_speed > max_speed_threshold:
+            # Check if the current speed exceeds the dynamic speed threshold
+            if current_speed > dynamic_speed_threshold:
                 # If the speed is too high, ignore the object completely and do nothing
-                print(f"Ignored object with speed {current_speed:.2f}, too fast compared to max speed {max_speed_threshold:.2f}")
+                print(f"Ignored object with speed {current_speed:.2f}, too fast compared to dynamic threshold {dynamic_speed_threshold:.2f}")
                 return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
             # Check bounding box size and draw if within the allowed range
@@ -320,11 +321,6 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
             trajectory_points.append(last_position)
 
     return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
-
-
-
-
-
 
 
 
