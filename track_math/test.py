@@ -233,44 +233,62 @@ def handle_object_tracking(contours, tracked_object, last_position, target_lost_
                            curr_frame, min_contour_area, trajectory_points, frame_center, last_bbox_area, last_speed):
     """Handle the logic of tracking the object, considering bounding box area and speed check."""
 
+    # Check if we need to initialize tracking
     if tracked_object is None and contours:
-        # If no object is being tracked, find the largest contour to start tracking
-        tracked_object = find_largest_contour(contours, min_contour_area)
-        if tracked_object is not None:
-            # Update Kalman filter with the object's position
-            last_position, bbox = update_kalman_filter(kalman, tracked_object)
-            current_bbox_area = bbox[2] * bbox[3]  # Calculate area of the new bounding box
-            current_speed = 0  # Set initial speed to 0 since we just started tracking
+        tracked_object, last_position, last_bbox_area, target_lost_frames = initialize_tracking(
+            contours, kalman, min_contour_area, curr_frame, last_bbox_area, target_lost_frames, trajectory_points
+        )
 
-            if last_bbox_area is None or current_bbox_area <= 1 * last_bbox_area:
-                # Draw the bounding box if the new area is not more than twice the last saved area
-                draw_bounding_box(curr_frame, bbox)
-                last_bbox_area = current_bbox_area  # Update last_bbox_area with the current one
-            trajectory_points.append(last_position)
-            target_lost_frames = 0
+    # Update tracking if the object is already being tracked
     elif tracked_object is not None:
-        # Update tracking if the object is already being tracked
         tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed = update_tracking_with_contours_and_speed(
             contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame,
             trajectory_points, frame_center, last_bbox_area, last_speed
         )
 
-    # Calculate angle of movement if we have at least two points
+    # Perform the angle check
     if len(trajectory_points) >= 2:
-        dx = trajectory_points[-1][0] - trajectory_points[-2][0]
-        dy = trajectory_points[-1][1] - trajectory_points[-2][1]
-        angle = math.degrees(math.atan2(dy, dx))
-
-        # Check if the object is moving up or down based on the angle
-        if 70 <= abs(angle) <= 110:  # Between 70 and 110 degrees for vertical motion
-            print(f"Stopped tracking due to vertical movement (angle: {angle:.2f} degrees)")
-            tracked_object = None  # Stop tracking the object
-            return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
-
-        # Display the angle on the frame
-        cv2.putText(curr_frame, f"Angle: {angle:.2f} degrees", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        if check_angle_and_stop_tracking(trajectory_points, curr_frame):
+            tracked_object = None  # Stop tracking if vertical movement is detected
 
     return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
+
+
+def initialize_tracking(contours, kalman, min_contour_area, curr_frame, last_bbox_area, target_lost_frames, trajectory_points):
+    """Initialize object tracking by finding the largest contour and updating Kalman filter."""
+    tracked_object = find_largest_contour(contours, min_contour_area)
+    if tracked_object is not None:
+        # Update Kalman filter and get the object's position and bounding box
+        last_position, bbox = update_kalman_filter(kalman, tracked_object)
+        current_bbox_area = bbox[2] * bbox[3]  # Calculate area of the new bounding box
+
+        # Only draw the bounding box if the new area is not more than twice the last saved area
+        if last_bbox_area is None or current_bbox_area <= 1 * last_bbox_area:
+            draw_bounding_box(curr_frame, bbox)
+            last_bbox_area = current_bbox_area
+
+        # Add the new position to trajectory points and reset lost frames counter
+        trajectory_points.append(last_position)
+        target_lost_frames = 0
+
+    return tracked_object, last_position, last_bbox_area, target_lost_frames
+
+
+def check_angle_and_stop_tracking(trajectory_points, curr_frame):
+    """Check the angle of movement and stop tracking if vertical movement is detected."""
+    dx = trajectory_points[-1][0] - trajectory_points[-2][0]
+    dy = trajectory_points[-1][1] - trajectory_points[-2][1]
+    angle = math.degrees(math.atan2(dy, dx))
+
+    # Check if the object is moving vertically (between 70 and 110 degrees)
+    if 70 <= abs(angle) <= 110:
+        print(f"Stopped tracking due to vertical movement (angle: {angle:.2f} degrees)")
+        return True  # Indicate that tracking should be stopped
+
+    # Display the angle on the frame
+    cv2.putText(curr_frame, f"Angle: {angle:.2f} degrees", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    return False
+
 
 
 def update_tracking_with_contours_and_speed(contours, tracked_object, last_position, target_lost_frames,
