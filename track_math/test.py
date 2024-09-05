@@ -272,6 +272,7 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
     """Update the Kalman filter, handle contour matching, and check object speed."""
     bbox_size_threshold = 10
     draw_box = True  # Initialize the draw flag to true
+    max_distance = 100  # Maximum allowed distance in pixels
 
     # Set the dynamic speed threshold based on the last tracked object's speed
     dynamic_speed_threshold = last_speed * 5 if last_speed > 0 else 100  # If last_speed is 0, use the default max speed
@@ -292,8 +293,23 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
             dy = last_position[1] - previous_position[1]
             current_speed = math.sqrt(dx ** 2 + dy ** 2)  # Speed is the Euclidean distance between positions
 
+            # Calculate the center of the last known bounding box
+            last_bbox_center = (previous_position[0], previous_position[1])
+
+            # Calculate the center of the current bounding box
+            current_bbox_center = (last_position[0], last_position[1])
+
+            # Calculate the distance between the last known center and the current center
+            distance_from_last_bbox = math.sqrt((current_bbox_center[0] - last_bbox_center[0]) ** 2 +
+                                                (current_bbox_center[1] - last_bbox_center[1]) ** 2)
+
+            # Check if the object is too far from the last known bounding box center
+            if distance_from_last_bbox > max_distance:
+                print(f"Ignored object due to distance {distance_from_last_bbox:.2f} > {max_distance} pixels from the last bbox center")
+                draw_box = False  # Ignore objects further than max_distance
+
             # Check if the current speed exceeds the dynamic speed threshold
-            if current_speed > dynamic_speed_threshold:
+            elif current_speed > dynamic_speed_threshold:
                 # If the speed is too high, ignore the object completely and do nothing
                 print(f"Ignored object with speed {current_speed:.2f}, too fast compared to dynamic threshold {dynamic_speed_threshold:.2f}")
                 draw_box = False  # Prevent drawing if speed is too high
@@ -309,7 +325,7 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
                         print(f"Stopped tracking due to vertical movement (angle: {angle:.2f} degrees)")
                         draw_box = False  # Prevent drawing if the angle is in the vertical range
 
-            # If speed and angle conditions are met, draw the bounding box
+            # If speed, distance, and angle conditions are met, draw the bounding box
             if draw_box:
                 # Check bounding box size and draw if within the allowed range
                 if last_bbox_area is None or current_bbox_area <= bbox_size_threshold * last_bbox_area:
@@ -340,17 +356,19 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
 
 
 
+
+
 def main():
     # Parameters for fine-tuning the algorithm
     THRESHOLD_VALUE = 30  # Threshold value for binary thresholding
-    MIN_CONTOUR_AREA = 20  # Minimum contour area to consider for tracking
+    MIN_CONTOUR_AREA = 10  # Minimum contour area to consider for tracking
     MORPH_KERNEL_SIZE = (7, 7)  # Kernel size for morphological operations
     DILATION_ITERATIONS = 3  # Number of dilation iterations
     EROSION_ITERATIONS = 1  # Number of erosion iterations
     TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
 
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_40_55.avi"
+    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_38_16.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()
