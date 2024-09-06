@@ -266,16 +266,16 @@ def handle_multiple_objects_tracking(contours, tracked_objects, last_positions, 
 
 def main():
     # Parameters for fine-tuning the algorithm
-    THRESHOLD_VALUE = 40  # Threshold value for binary thresholding
+    THRESHOLD_VALUE = 30  # Threshold value for binary thresholding
     MIN_CONTOUR_AREA = 500  # Minimum contour area to consider for tracking
     MORPH_KERNEL_SIZE = (7, 7)  # Kernel size for morphological operations
     DILATION_ITERATIONS = 3  # Number of dilation iterations
-    EROSION_ITERATIONS = 2  # Number of erosion iterations
+    EROSION_ITERATIONS = 1  # Number of erosion iterations
     NUM_PREDICTIONS = 10  # Number of future positions to predict
     TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
 
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\WhatsApp Video 2024-06-21 at 14.06.29_90a02dec.mp4"
+    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_35_49.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()

@@ -316,7 +316,7 @@ def main():
     TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
 
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_36_40.avi"
+    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_35_49.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()

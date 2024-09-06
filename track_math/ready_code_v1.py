@@ -3,7 +3,6 @@ import numpy as np
 import time
 from screeninfo import get_monitors
 
-
 def get_screen_size():
     """Get the screen width and height."""
     monitor = get_monitors()[0]  # Get the primary monitor's information
@@ -28,16 +27,20 @@ def read_first_frame(cap):
 
 def initialize_kalman_filter():
     """Initialize and return a Kalman filter for tracking."""
-    kalman = cv2.KalmanFilter(4, 2)  # 4 dynamic parameters (x, y, dx, dy) and 2 measured parameters (x, y)
+    # Kalman filter with 4 dynamic parameters (x, y, dx, dy) and 2 measured parameters (x, y)
+    kalman = cv2.KalmanFilter(4, 2)
 
+    # Measurement matrix describes how the measurement relates to the state
     kalman.measurementMatrix = np.array([[1, 0, 0, 0],
                                          [0, 1, 0, 0]], np.float32)
 
+    # Transition matrix defines the transition between states (x, y, dx, dy)
     kalman.transitionMatrix = np.array([[1, 0, 1, 0],
                                         [0, 1, 0, 1],
                                         [0, 0, 1, 0],
                                         [0, 0, 0, 1]], np.float32)
 
+    # Process noise and measurement noise covariance matrices
     kalman.processNoiseCov = np.eye(4, dtype=np.float32) * 0.1
     kalman.measurementNoiseCov = np.eye(2, dtype=np.float32) * 0.1
     kalman.errorCovPost = np.eye(4, dtype=np.float32) * 0.1
@@ -57,14 +60,17 @@ def convert_to_grayscale(frame):
 
 def calculate_difference(prev_frame, curr_frame):
     """Calculate the absolute difference between consecutive frames."""
-    diff = cv2.absdiff(prev_frame, curr_frame)  # Compute the absolute difference between frames
-    diff = cv2.GaussianBlur(diff, (7, 7), 0)  # Apply Gaussian blur to reduce noise
+    # Compute the absolute difference between frames
+    diff = cv2.absdiff(prev_frame, curr_frame)
+    # Apply Gaussian blur to reduce noise
+    diff = cv2.GaussianBlur(diff, (7, 7), 0)
     return diff
 
 
 def apply_thresholding(diff, threshold_value, kernel_size, dilation_iterations, erosion_iterations):
     """Apply thresholding and morphological operations to detect moving objects."""
-    _, thresh = cv2.threshold(diff, threshold_value, 255, cv2.THRESH_BINARY)  # Apply binary thresholding
+    # Apply binary thresholding
+    _, thresh = cv2.threshold(diff, threshold_value, 255, cv2.THRESH_BINARY)
 
     # Create a kernel for morphological operations
     kernel = np.ones(kernel_size, np.uint8)
@@ -84,14 +90,16 @@ def find_largest_contour(contours, min_contour_area):
     if contours:
         # Find the contour with the maximum area
         contour = max(contours, key=cv2.contourArea)
+        # Return the largest contour if its area is above the threshold
         if cv2.contourArea(contour) >= min_contour_area:
-            return contour  # Return the largest contour if its area is above the threshold
+            return contour
     return None
 
 
 def update_kalman_filter(kalman, contour):
     """Update the Kalman filter with the position of the detected contour."""
-    (x, y, w, h) = cv2.boundingRect(contour)  # Get the bounding box of the contour
+    # Get the bounding box of the contour
+    (x, y, w, h) = cv2.boundingRect(contour)
 
     # Calculate the center position of the bounding box
     position = (x + w // 2, y + h // 2)
@@ -103,48 +111,14 @@ def update_kalman_filter(kalman, contour):
     # Update the Kalman filter with the current measurement
     kalman.correct(measurement)
 
-    return position, (x, y, w, h)  # Return the position and bounding box
-
-
-# def predict_future_positions(kalman, num_predictions):
-#     """Predict and return future positions using the Kalman filter."""
-#     future_positions = []
-#
-#     # Predict future positions for the specified number of frames
-#     for _ in range(num_predictions):
-#         prediction = kalman.predict()  # Predict the next position
-#         future_positions.append((int(prediction[0][0]), int(prediction[1][0])))  # Extract and append the predicted position
-#
-#     # return future_positions
-#     return None
+    return position, (x, y, w, h)
 
 
 def draw_bounding_box(frame, bbox):
     """Draw a bounding box around the detected object."""
     x, y, w, h = bbox
-    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)  # Draw the rectangle with a blue color
-
-
-# def draw_trajectory(frame, trajectory_points, max_trajectory_length):
-#     """Draw the trajectory of the tracked object on the frame."""
-#     total_length = 0
-#
-#     # Iterate over the trajectory points in reverse order to calculate the length
-#     for i in range(len(trajectory_points) - 1, 0, -1):
-#         pt1 = trajectory_points[i]
-#         pt2 = trajectory_points[i - 1]
-#         total_length += np.linalg.norm(np.array(pt1) - np.array(pt2))
-#
-#         # Trim the trajectory if it exceeds the maximum length
-#         if total_length > max_trajectory_length:
-#             trajectory_points = trajectory_points[i:]
-#             break
-#
-#     # Draw the trajectory line between the points
-#     for i in range(1, len(trajectory_points)):
-#         pt1 = tuple(map(int, trajectory_points[i - 1]))
-#         pt2 = tuple(map(int, trajectory_points[i]))
-#         cv2.line(frame, pt1, pt2, (0, 255, 255), 2)  # Draw the line with a yellow color
+    # Draw the rectangle with a blue color
+    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
 
 def draw_crosshair(frame):
@@ -153,12 +127,11 @@ def draw_crosshair(frame):
     thickness = 1  # Thickness of the crosshair lines
 
     # Get the center of the frame
-    center_x = frame.shape[1] // 2  # Width of the frame
-    center_y = frame.shape[0] // 2  # Height of the frame
+    center_x = frame.shape[1] // 2
+    center_y = frame.shape[0] // 2
 
     # Draw the horizontal line across the entire width of the frame
     cv2.line(frame, (0, center_y), (frame.shape[1], center_y), color, thickness)
-
     # Draw the vertical line across the entire height of the frame
     cv2.line(frame, (center_x, 0), (center_x, frame.shape[0]), color, thickness)
 
@@ -173,11 +146,10 @@ def calculate_fps(start_time):
 def display_fps(frame, fps):
     """Display the FPS on the frame."""
     cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-    # return None
 
 
-def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, crosshair_length, threshold_value, min_contour_area, morph_kernel_size,
-                          dilation_iterations, erosion_iterations, num_predictions, max_trajectory_length, target_memory_frames):
+def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, threshold_value, min_contour_area, morph_kernel_size,
+                          dilation_iterations, erosion_iterations, target_memory_frames):
     """Track the object across video frames."""
     tracked_object = None
     last_position = None
@@ -193,23 +165,33 @@ def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, c
             print("Error: Could not read the frame.")
             break
 
+        # Resize current frame
         curr_frame = resize_frame(curr_frame, screen_width, screen_height)
         curr_gray = convert_to_grayscale(curr_frame)
+
+        # Resize previous frame
         prev_gray = resize_frame(prev_gray, screen_width, screen_height)
 
+        # Calculate difference and apply thresholding
         diff = calculate_difference(prev_gray, curr_gray)
         thresh = apply_thresholding(diff, threshold_value, morph_kernel_size, dilation_iterations, erosion_iterations)
+
+        # Find contours in thresholded frame
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+        # Handle object tracking and draw bounding boxes
         tracked_object, last_position, target_lost_frames = handle_object_tracking(
-            contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, min_contour_area, trajectory_points, frame_center, num_predictions
+            contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, min_contour_area, trajectory_points, frame_center
         )
 
+        # Draw crosshair on the frame
         draw_crosshair(curr_frame)
 
+        # Calculate and display FPS
         fps = calculate_fps(start_time)
         display_fps(curr_frame, fps)
 
+        # Show the result
         cv2.imshow('Frame', curr_frame)
 
         if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -218,29 +200,33 @@ def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, c
         prev_gray = curr_gray.copy()
 
 
-def handle_object_tracking(contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, min_contour_area, trajectory_points, frame_center, num_predictions):
+def handle_object_tracking(contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, min_contour_area, trajectory_points, frame_center):
     """Handle the logic of tracking the object."""
     if tracked_object is None and contours:
+        # If no object is being tracked, find the largest contour to start tracking
         tracked_object = find_largest_contour(contours, min_contour_area)
         if tracked_object is not None:
+            # Update Kalman filter with the object's position
             last_position, bbox = update_kalman_filter(kalman, tracked_object)
             trajectory_points.append(last_position)
             target_lost_frames = 0
             draw_bounding_box(curr_frame, bbox)
     elif tracked_object is not None:
+        # Update tracking if the object is already being tracked
         tracked_object, last_position, target_lost_frames = update_tracking_with_contours(
-            contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, trajectory_points, frame_center, num_predictions
+            contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, trajectory_points, frame_center
         )
     return tracked_object, last_position, target_lost_frames
 
 
-def update_tracking_with_contours(contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, trajectory_points, frame_center, num_predictions):
+def update_tracking_with_contours(contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, trajectory_points, frame_center):
     """Update the Kalman filter and handle contour matching."""
     if contours:
+        # Find the closest contour to the last known position
         closest_contour, min_distance = find_closest_contour(contours, last_position)
         if closest_contour is not None:
+            # Update Kalman filter with new measurement
             last_position, bbox = update_kalman_filter(kalman, closest_contour)
-            # prediction = kalman.predict()
             target_lost_frames = 0
             draw_bounding_box(curr_frame, bbox)
         else:
@@ -248,10 +234,12 @@ def update_tracking_with_contours(contours, tracked_object, last_position, targe
     else:
         target_lost_frames += 1
 
+    # Reset tracking if the object is lost for too many frames
     if target_lost_frames > target_memory_frames:
         tracked_object = None
         target_lost_frames = 0
     else:
+        # Draw trajectory line from center to object
         bbox_center_x = int(last_position[0])
         bbox_center_y = int(last_position[1])
         cv2.line(curr_frame, frame_center, (bbox_center_x, bbox_center_y), (0, 0, 255), 1)
@@ -267,6 +255,7 @@ def find_closest_contour(contours, last_position):
     for contour in contours:
         (x, y, w, h) = cv2.boundingRect(contour)
         center = (x + w // 2, y + h // 2)
+        # Calculate the distance between the contour's center and the last known position
         distance = np.linalg.norm(np.array(center) - np.array(last_position))
         if distance < min_distance:
             min_distance = distance
@@ -276,18 +265,15 @@ def find_closest_contour(contours, last_position):
 
 def main():
     # Parameters for fine-tuning the algorithm
-    THRESHOLD_VALUE = 40  # Threshold value for binary thresholding
+    THRESHOLD_VALUE = 30  # Threshold value for binary thresholding
     MIN_CONTOUR_AREA = 500  # Minimum contour area to consider for tracking
     MORPH_KERNEL_SIZE = (7, 7)  # Kernel size for morphological operations
     DILATION_ITERATIONS = 3  # Number of dilation iterations
     EROSION_ITERATIONS = 1  # Number of erosion iterations
-    NUM_PREDICTIONS = 10  # Number of future positions to predict
-    MAX_TRAJECTORY_LENGTH = 100  # Maximum length of the trajectory in pixels
     TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
-    CROSSHAIR_LENGTH = 25  # Length of the crosshair lines in pixels
 
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\IMG_0 (1).MOV"
+    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_38_16.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()
@@ -300,12 +286,13 @@ def main():
     # Initialize the Kalman filter
     kalman = initialize_kalman_filter()
 
+    # Set the video window to full screen
     cv2.namedWindow('Frame', cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty('Frame', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     # Track the object across frames
-    track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, CROSSHAIR_LENGTH, THRESHOLD_VALUE, MIN_CONTOUR_AREA, MORPH_KERNEL_SIZE,
-                          DILATION_ITERATIONS, EROSION_ITERATIONS, NUM_PREDICTIONS, MAX_TRAJECTORY_LENGTH, TARGET_MEMORY_FRAMES)
+    track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, THRESHOLD_VALUE, MIN_CONTOUR_AREA, MORPH_KERNEL_SIZE,
+                          DILATION_ITERATIONS, EROSION_ITERATIONS, TARGET_MEMORY_FRAMES)
 
     # Release video capture and close all frames
     cap.release()

@@ -56,8 +56,13 @@ def resize_frame(frame, width, height):
 
 
 def convert_to_grayscale(frame):
-    """Convert the frame to grayscale."""
-    return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    """Convert the frame to grayscale if necessary."""
+    # If the frame has 3 channels (e.g., BGR or RGB), convert to grayscale
+    if len(frame.shape) == 3 and frame.shape[2] == 3:
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # If the frame is already single-channel (e.g., thermal data), return as is
+    return frame
 
 
 def calculate_difference(prev_frame, curr_frame):
@@ -89,7 +94,7 @@ def apply_thresholding(diff, threshold_value, kernel_size, dilation_iterations, 
 
 def find_largest_contour(contours, min_contour_area):
     """Find and return the largest contour above a certain area threshold."""
-    if contours:
+    if contours:#!!!!
         # Find the contour with the maximum area
         contour = max(contours, key=cv2.contourArea)
         # Return the largest contour if its area is above the threshold
@@ -174,6 +179,8 @@ def find_closest_contour(contours, last_position):
     return closest_contour  # Return the closest valid contour
 
 
+
+
 def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, threshold_value, min_contour_area, morph_kernel_size,
                           dilation_iterations, erosion_iterations, target_memory_frames):
     """Track the object across video frames."""
@@ -198,7 +205,7 @@ def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, t
         curr_gray = convert_to_grayscale(curr_frame)
 
         # Resize previous frame
-        prev_gray = resize_frame(prev_gray, screen_width, screen_height)
+        prev_gray = resize_frame(prev_gray, screen_width, screen_height) #????
 
         # Calculate difference and apply thresholding
         diff = calculate_difference(prev_gray, curr_gray)
@@ -225,7 +232,7 @@ def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, t
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
-        prev_gray = curr_gray.copy()
+        prev_gray = curr_gray#.copy()
 
 
 
@@ -234,7 +241,7 @@ def handle_object_tracking(contours, tracked_object, last_position, target_lost_
     """Handle the logic of tracking the object, considering bounding box area and speed check."""
 
     # Check if we need to initialize tracking
-    if tracked_object is None and contours:
+    if tracked_object is None and contours: #
         tracked_object, last_position, last_bbox_area, target_lost_frames = initialize_tracking(
             contours, kalman, min_contour_area, curr_frame, last_bbox_area, target_lost_frames, trajectory_points
         )
@@ -268,7 +275,7 @@ def initialize_tracking(contours, kalman, min_contour_area, curr_frame, last_bbo
             last_bbox_area = current_bbox_area
 
         # Add the new position to trajectory points and reset lost frames counter
-        trajectory_points.append(last_position)
+        trajectory_points.append(last_position) #single value
         target_lost_frames = 0
 
     return tracked_object, last_position, last_bbox_area, target_lost_frames
@@ -290,12 +297,11 @@ def check_angle_and_stop_tracking(trajectory_points, curr_frame):
     return False
 
 
-
 def update_tracking_with_contours_and_speed(contours, tracked_object, last_position, target_lost_frames,
                                             target_memory_frames, kalman, curr_frame, trajectory_points, frame_center,
                                             last_bbox_area, last_speed):
     """Update the Kalman filter, handle contour matching, and check object speed and distance."""
-    max_distance = 500  # Maximum allowed distance in pixels
+    max_distance = 100  # Maximum allowed distance in pixels
     bbox_size_threshold = 10  # Bounding box size threshold
     dynamic_speed_threshold = last_speed * 5 if last_speed > 0 else 100  # Dynamic speed threshold
 
@@ -372,7 +378,7 @@ def is_angle_valid(trajectory_points):
         dx = trajectory_points[-1][0] - trajectory_points[-2][0]
         dy = trajectory_points[-1][1] - trajectory_points[-2][1]
         angle = math.degrees(math.atan2(dy, dx))
-        return not (85 <= abs(angle) <= 95)  # Ignore vertical movement
+        return not (80 <= abs(angle) <= 100)  # Ignore vertical movement
     return True  # If we don't have enough points, assume valid
 
 
@@ -400,7 +406,7 @@ def main():
     TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
 
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_38_16.avi"
+    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_35_49.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()
