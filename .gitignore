@@ -3,6 +3,7 @@ CUDA.zip
 /COCO_dataset_project/
 .idea/
 .venv/
+__pycache__/
 /tenis/
 /tenis_test/
 /pythonProject/
@@ -21,3 +22,4 @@ CUDA.zip
 /track_math/output_videos/
 /yolov7/video/
 *.pt
+*.avi
