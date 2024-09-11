@@ -4,7 +4,6 @@ import time
 from screeninfo import get_monitors
 import math
 
-
 video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_33_25.avi"
 
 
@@ -14,7 +13,6 @@ def get_screen_size():
     return monitor.width, monitor.height
 
 # Fetch screen width and height
-# screen_width, screen_height = get_screen_size()
 screen_width, screen_height = 1920, 1080
 frame_center = (screen_width // 2, screen_height // 2)
 cap = cv2.VideoCapture(video_path)
@@ -28,6 +26,7 @@ class Config:
     dilation_iterations = 3
     erosion_iterations = 1
     target_memory_frames = 10
+    movement_threshold = 700000  # Threshold for detecting camera movement
 
 
 class Target:
@@ -154,10 +153,21 @@ def draw_line_to_bbox(frame, bbox):
 
 
 def draw_info(frame, start_time):
-    draw_crosshair(frame)  # Now uses the updated crosshair function
-    # fps = calculate_fps(start_time)
-    # display_fps(frame, fps)
+    draw_crosshair(frame)
     cv2.imshow('Frame', frame)
+
+
+def calculate_global_frame_difference(prev_frame, curr_frame):
+    """Calculate the global frame difference to detect camera movement."""
+    diff = cv2.absdiff(prev_frame, curr_frame)
+    return np.sum(diff)
+
+
+def detect_camera_movement(prev_frame, curr_frame, movement_threshold):
+    """Detects camera movement based on frame differences."""
+    global_diff = calculate_global_frame_difference(prev_frame, curr_frame)
+    print(f"Global Frame Difference: {global_diff}")  # Print the difference value for debugging
+    return global_diff > movement_threshold
 
 
 def main():
@@ -167,44 +177,54 @@ def main():
     cv2.namedWindow('Frame', cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty('Frame', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
+    camera_moving = False
+
     while cap.isOpened():
         start_time = time.time()
         frame, gray_frame = read_frame()
-        thresh_frame = threshold_frame(prev_frame, gray_frame)
-        contours, _ = cv2.findContours(thresh_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        targets_to_kill = []
-        for target in targets:
-            target.frames_to_kill -= 1
-            if target.frames_to_kill <= 0:
-                targets_to_kill.append(target)
-        for target in targets_to_kill:
-            targets.remove(target)
+        # Detect if the camera is moving
+        camera_moving = detect_camera_movement(prev_frame, gray_frame, Config.movement_threshold)
 
-        if len(contours) + len(targets) <= 3:
-            contours_with_no_targets = []
-            for contour in contours:
-                target = find_closest_target(contour, targets)
-                if target is None:
-                    contours_with_no_targets.append(contour)
+        if camera_moving:
+            print("Camera is moving, skipping object tracking...")
+        else:
+            # print("Camera is stable, tracking objects...")
+            thresh_frame = threshold_frame(prev_frame, gray_frame)
+            contours, _ = cv2.findContours(thresh_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-            for contour in contours_with_no_targets:
-                targets.append(Target(contour))
-
+            targets_to_kill = []
             for target in targets:
-                if target.active:
-                    draw_bounding_box(frame, target.bbox)
-                    update_kalman_filter(kalman, target.position)
-                    draw_line_to_bbox(frame, target.bbox)  # Draw the red line to bbox
+                target.frames_to_kill -= 1
+                if target.frames_to_kill <= 0:
+                    targets_to_kill.append(target)
+            for target in targets_to_kill:
+                targets.remove(target)
 
-        # If no contours found, predict using Kalman
-        if len(contours) == 0 and len(targets) > 0:
-            predicted_position = predict_kalman(kalman)
-            predicted_bbox = (predicted_position[0] - targets[0].bbox[2] // 2,
-                              predicted_position[1] - targets[0].bbox[3] // 2,
-                              targets[0].bbox[2],
-                              targets[0].bbox[3])
-            draw_bounding_box(frame, predicted_bbox)
+            if len(contours) + len(targets) <= 3:
+                contours_with_no_targets = []
+                for contour in contours:
+                    target = find_closest_target(contour, targets)
+                    if target is None:
+                        contours_with_no_targets.append(contour)
+
+                for contour in contours_with_no_targets:
+                    targets.append(Target(contour))
+
+                for target in targets:
+                    if target.active:
+                        draw_bounding_box(frame, target.bbox)
+                        update_kalman_filter(kalman, target.position)
+                        draw_line_to_bbox(frame, target.bbox)
+
+            # If no contours found, predict using Kalman
+            # if len(contours) == 0 and len(targets) > 0:
+            #     predicted_position = predict_kalman(kalman)
+            #     predicted_bbox = (predicted_position[0] - targets[0].bbox[2] // 2,
+            #                       predicted_position[1] - targets[0].bbox[3] // 2,
+            #                       targets[0].bbox[2],
+            #                       targets[0].bbox[3])
+            #     draw_bounding_box(frame, predicted_bbox)
 
         draw_info(frame, start_time)
 
