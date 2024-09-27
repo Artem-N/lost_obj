@@ -3,6 +3,7 @@ import numpy as np
 import time
 from screeninfo import get_monitors
 import math
+from collections import deque
 
 
 def get_screen_size():
@@ -122,12 +123,11 @@ def update_kalman_filter(kalman, contour):
     return position, (x, y, w, h)  # Return position and bounding box
 
 
-
 def draw_bounding_box(frame, bbox):
     """Draw a bounding box around the detected object."""
     x, y, w, h = bbox
     # Draw the rectangle with a blue color
-    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 3)
 
 
 def draw_crosshair(frame):
@@ -159,7 +159,7 @@ def display_fps(frame, fps):
 
 def find_closest_contour(contours, last_position):
     """Find the contour closest to the last known position."""
-    if last_position is None or not contours:
+    if last_position is None or len(last_position) == 0 or not contours:
         return None  # Return None if last_position or contours are invalid
 
     closest_contour = None
@@ -167,7 +167,7 @@ def find_closest_contour(contours, last_position):
 
     for contour in contours:
         # Get the center of the contour's bounding box
-        (x, y, w, h) = cv2.boundingRect(contour)  # Ensure each contour works with boundingRect
+        (x, y, w, h) = cv2.boundingRect(contour)
         center = (x + w // 2, y + h // 2)
 
         # Calculate the Euclidean distance from the last known position
@@ -179,21 +179,19 @@ def find_closest_contour(contours, last_position):
     return closest_contour  # Return the closest valid contour
 
 
-
-
-def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, threshold_value, min_contour_area, morph_kernel_size,
-                          dilation_iterations, erosion_iterations, target_memory_frames):
+def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, threshold_value, min_contour_area,
+                          morph_kernel_size, dilation_iterations, erosion_iterations, target_memory_frames):
     """Track the object across video frames."""
-    tracked_object = None
-    last_position = None
-    trajectory_points = []
+    tracked_object = deque(maxlen=100)
+    last_position = deque(maxlen=100)
+    trajectory_points = deque(maxlen=20)
     target_lost_frames = 0
     last_bbox_area = None  # Track the area of the last saved bounding box
     last_speed = 0  # Track the speed of the last tracked object
     frame_center = (screen_width // 2, screen_height // 2)
 
     while cap.isOpened():
-        start_time = time.time()
+        # start_time = time.time()
 
         ret, curr_frame = cap.read()
         if not ret or curr_frame is None:
@@ -216,15 +214,16 @@ def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, t
 
         # Handle object tracking and draw bounding boxes
         tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed = handle_object_tracking(
-            contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame, min_contour_area, trajectory_points, frame_center, last_bbox_area, last_speed
+            contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman, curr_frame,
+            min_contour_area, trajectory_points, frame_center, last_bbox_area, last_speed
         )
 
         # Draw crosshair on the frame
         draw_crosshair(curr_frame)
 
         # Calculate and display FPS
-        fps = calculate_fps(start_time)
-        display_fps(curr_frame, fps)
+        # fps = calculate_fps(start_time)
+        # display_fps(curr_frame, fps)
 
         # Show the result
         cv2.imshow('Frame', curr_frame)
@@ -232,8 +231,7 @@ def track_object_in_frame(cap, kalman, prev_gray, screen_width, screen_height, t
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
-        prev_gray = curr_gray#.copy()
-
+        prev_gray = curr_gray
 
 
 def handle_object_tracking(contours, tracked_object, last_position, target_lost_frames, target_memory_frames, kalman,
@@ -275,7 +273,7 @@ def initialize_tracking(contours, kalman, min_contour_area, curr_frame, last_bbo
             last_bbox_area = current_bbox_area
 
         # Add the new position to trajectory points and reset lost frames counter
-        trajectory_points.append(last_position) #single value
+        trajectory_points.append(last_position)
         target_lost_frames = 0
 
     return tracked_object, last_position, last_bbox_area, target_lost_frames
@@ -288,12 +286,12 @@ def check_angle_and_stop_tracking(trajectory_points, curr_frame):
     angle = math.degrees(math.atan2(dy, dx))
 
     # Check if the object is moving vertically (between 70 and 110 degrees)
-    if 70 <= abs(angle) <= 110:
-        print(f"Stopped tracking due to vertical movement (angle: {angle:.2f} degrees)")
+    if -110 <= angle <= -70:
+        # print(f"Stopped tracking due to vertical movement (angle: {angle:.2f} degrees)")
         return True  # Indicate that tracking should be stopped
 
     # Display the angle on the frame
-    cv2.putText(curr_frame, f"Angle: {angle:.2f} degrees", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    # cv2.putText(curr_frame, f"Angle: {angle:.2f} degrees", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
     return False
 
 
@@ -301,8 +299,8 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
                                             target_memory_frames, kalman, curr_frame, trajectory_points, frame_center,
                                             last_bbox_area, last_speed):
     """Update the Kalman filter, handle contour matching, and check object speed and distance."""
-    max_distance = 100  # Maximum allowed distance in pixels
-    bbox_size_threshold = 10  # Bounding box size threshold
+    max_distance = 50  # Maximum allowed distance in pixels
+    bbox_size_threshold = 5  # Bounding box size threshold
     dynamic_speed_threshold = last_speed * 5 if last_speed > 0 else 100  # Dynamic speed threshold
 
     if contours:
@@ -315,18 +313,19 @@ def update_tracking_with_contours_and_speed(contours, tracked_object, last_posit
 
             # Perform checks for distance, speed, and angle
             if not is_within_distance(last_position, last_position, max_distance):
-                print(f"Ignored object due to distance > {max_distance} pixels")
+                # print(f"Ignored object due to distance > {max_distance} pixels")
                 return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
             if not is_speed_valid(last_position, last_position, last_speed, dynamic_speed_threshold):
-                print(f"Ignored object due to high speed")
+                # print(f"Ignored object due to high speed")
                 return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
             if not is_angle_valid(trajectory_points):
-                print(f"Ignored object due to vertical movement")
+                # print(f"Ignored object due to vertical movement")
                 return tracked_object, last_position, target_lost_frames, last_bbox_area, last_speed
 
             # If all checks passed, draw the bounding box and red line
+            # print("All ckeck is passed - draw bbox")
             if should_draw_bbox(last_bbox_area, bbox, bbox_size_threshold):
                 draw_bounding_box_and_line(curr_frame, bbox, last_position, frame_center)
                 last_bbox_area = bbox[2] * bbox[3]  # Update bounding box area
@@ -378,7 +377,7 @@ def is_angle_valid(trajectory_points):
         dx = trajectory_points[-1][0] - trajectory_points[-2][0]
         dy = trajectory_points[-1][1] - trajectory_points[-2][1]
         angle = math.degrees(math.atan2(dy, dx))
-        return not (80 <= abs(angle) <= 100)  # Ignore vertical movement
+        return not (-110 <= angle <= -70)  # Ignore vertical movement
     return True  # If we don't have enough points, assume valid
 
 
@@ -393,20 +392,20 @@ def draw_bounding_box_and_line(curr_frame, bbox, last_position, frame_center):
     draw_bounding_box(curr_frame, bbox)  # Draw bounding box
     bbox_center_x = int(last_position[0])
     bbox_center_y = int(last_position[1])
-    cv2.line(curr_frame, frame_center, (bbox_center_x, bbox_center_y), (0, 0, 255), 1)  # Draw the red line
+    cv2.line(curr_frame, frame_center, (bbox_center_x, bbox_center_y), (0, 0, 255), 2)  # Draw the red line
 
 
 def main():
     # Parameters for fine-tuning the algorithm
     THRESHOLD_VALUE = 30  # Threshold value for binary thresholding
     MIN_CONTOUR_AREA = 10  # Minimum contour area to consider for tracking
-    MORPH_KERNEL_SIZE = (7, 7)  # Kernel size for morphological operations
+    MORPH_KERNEL_SIZE = (9, 9)  # Kernel size for morphological operations
     DILATION_ITERATIONS = 3  # Number of dilation iterations
     EROSION_ITERATIONS = 1  # Number of erosion iterations
-    TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
+    TARGET_MEMORY_FRAMES = 10  # Number of frames to "remember" the target before resetting
 
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_35_49.avi"
+    video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_52_11.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()
