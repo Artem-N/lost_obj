@@ -10,7 +10,7 @@ from collections import deque
 # ===========================
 
 # Video Configuration
-VIDEO_PATH = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_33_25.avi"
+VIDEO_PATH = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_38_16.avi"
 
 # Thresholding and Morphological Operations
 THRESHOLD_VALUE = 30  # Threshold value for binary thresholding
@@ -21,7 +21,7 @@ EROSION_ITERATIONS = 1  # Number of erosion iterations
 
 # Tracking Parameters
 TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
-MAX_DISTANCE = 1500  # Maximum allowed distance in pixels for contour matching
+MAX_DISTANCE = 1000  # Maximum allowed distance in pixels for contour matching
 BBOX_SIZE_THRESHOLD = 5  # Bounding box size threshold multiplier
 DYNAMIC_SPEED_MULTIPLIER = 500  # Multiplier for dynamic speed threshold
 
@@ -201,7 +201,7 @@ class ObjectTracker:
 
     def enhance_contrast_linear(self, roi):
         """Enhance contrast using linear contrast stretching for grayscale images."""
-        roi_gray = roi
+        roi_gray = roi.copy()
         min_val = np.min(roi_gray)
         max_val = np.max(roi_gray)
         if max_val - min_val == 0:
@@ -235,8 +235,8 @@ class ObjectTracker:
             interpolation=cv2.INTER_LINEAR
         )
 
-        if len(zoomed_roi.shape) == 2:
-            zoomed_roi = cv2.cvtColor(zoomed_roi, cv2.COLOR_GRAY2BGR)
+        # if len(zoomed_roi.shape) == 2:
+        #     zoomed_roi = cv2.cvtColor(zoomed_roi, cv2.COLOR_GRAY2BGR)
 
         return zoomed_roi
 
