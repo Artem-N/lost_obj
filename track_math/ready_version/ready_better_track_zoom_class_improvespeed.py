@@ -10,7 +10,7 @@ from collections import deque
 # ===========================
 
 # Video Configuration
-VIDEO_PATH = r"C:\Users\User\Desktop\12653365_2160_3840_30fps.mp4"
+VIDEO_PATH = r"E:\video_for_test\fly\clear_video\GENERIC_RTSP-realmonitor_2023_09_20_15_30_00.avi"
 
 # Thresholding and Morphological Operations
 THRESHOLD_VALUE = 30  # Threshold value for binary thresholding
@@ -56,6 +56,7 @@ FRAME_SKIP = 2  # Process every 2nd frame
 # ===========================
 # Kalman Tracker Class
 # ===========================
+
 
 class KalmanTracker:
     """Encapsulates Kalman filter operations for object tracking."""
@@ -108,6 +109,7 @@ class KalmanTracker:
 # ===========================
 # Object Tracker Class
 # ===========================
+
 
 class ObjectTracker:
     """Manages video capture, frame processing, object tracking, and thumbnail handling."""
@@ -202,10 +204,63 @@ class ObjectTracker:
                     font, font_scale, color, thickness)
 
     def draw_crosshair(self, frame):
-        """Draw a crosshair across the entire video frame."""
-        center_x, center_y = self.frame_center
-        cv2.line(frame, (0, center_y), (self.screen_width, center_y), CROSSHAIR_COLOR, CROSSHAIR_THICKNESS)
-        cv2.line(frame, (center_x, 0), (center_x, self.screen_height), CROSSHAIR_COLOR, CROSSHAIR_THICKNESS)
+        """Draw a sniper-style crosshair on the video frame with dynamic markings."""
+        color = CROSSHAIR_COLOR  # Use the configured crosshair color
+        thickness = CROSSHAIR_THICKNESS  # Use the configured thickness
+        interval = 50  # Distance between dynamic markings
+        num_markings = 5  # Number of markings on each side
+        min_marking_length = 5  # Minimum length of markings
+        max_marking_length = 50  # Maximum length of markings
+
+        # Calculate the total length of the crosshair lines based on the number of markings and interval
+        line_length = num_markings * interval
+
+        # Get the center of the frame
+        center_x = frame.shape[1] // 2
+        center_y = frame.shape[0] // 2
+
+        # Draw the central horizontal crosshair line from center to the last marking on both sides
+        cv2.line(frame,
+                 (center_x - line_length, center_y),
+                 (center_x + line_length, center_y),
+                 color, thickness)
+
+        # Draw the central vertical crosshair line from center to the last marking on both sides
+        cv2.line(frame,
+                 (center_x, center_y - line_length),
+                 (center_x, center_y + line_length),
+                 color, thickness)
+
+        # Draw dynamic markings at specified intervals
+        for i in range(1, num_markings + 1):
+            # Calculate the length of the current marking
+            length = min_marking_length + int((max_marking_length - min_marking_length) * (i / num_markings))
+
+            # Calculate the offset for horizontal and vertical markings
+            offset_x = i * interval
+            offset_y = i * interval
+
+            # Horizontal markings (left and right of the central horizontal line)
+            cv2.line(frame,
+                     (center_x - offset_x, center_y - length // 2),
+                     (center_x - offset_x, center_y + length // 2),
+                     color, thickness)
+            cv2.line(frame,
+                     (center_x + offset_x, center_y - length // 2),
+                     (center_x + offset_x, center_y + length // 2),
+                     color, thickness)
+
+            # Vertical markings (above and below the central vertical line)
+            cv2.line(frame,
+                     (center_x - length // 2, center_y - offset_y),
+                     (center_x + length // 2, center_y - offset_y),
+                     color, thickness)
+            cv2.line(frame,
+                     (center_x - length // 2, center_y + offset_y),
+                     (center_x + length // 2, center_y + offset_y),
+                     color, thickness)
+
+        return frame
 
     def enhance_contrast_linear(self, roi):
         """Enhance contrast using linear contrast stretching for grayscale images."""
