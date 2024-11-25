@@ -3,15 +3,24 @@ from ultralytics import YOLO
 import numpy as np
 
 # Load the YOLO model
-model = YOLO(r"D:\pycharm_projects\yolov8\runs\detect\drone_v3_250ep_32bath2\weights\best.pt")
+model = YOLO(r"D:\pycharm_projects\yolov8\runs\detect\drone_v7_200ep_32bath\weights\best.pt")
 
 # Initialize variables
 tracker = None  # OpenCV tracker
 tracking = False  # Flag to indicate if we are currently tracking
 
 # Perform tracking with the model
-cap = cv2.VideoCapture(r"C:\Users\User\Desktop\fly\85d5885f-710b-4688-a864-1c0ee72b5df1.MP4")
+cap = cv2.VideoCapture(r"C:\Users\User\Desktop\fly\GeneralPT4S4_2023_09_20_15_28_21.avi")
 
+# Get video properties
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cap.get(cv2.CAP_PROP_FPS)
+
+# Define the codec and create VideoWriter object
+output_video_path = r'C:\Users\User\Desktop\show_thursday\bpla_day_4.mp4'  # Change this to your desired output file path
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # You can change 'mp4v' to 'XVID' for .avi files
+out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -55,6 +64,8 @@ while cap.isOpened():
             if w <= 0 or h <= 0:
                 print("Invalid bounding box dimensions: w =", w, "h =", h)
                 tracking = False
+                # Write the frame without bounding box to the output video
+                out.write(frame)
                 continue  # Skip this frame
 
             # Convert coordinates to integers
@@ -83,6 +94,9 @@ while cap.isOpened():
                     tracker = cv2.TrackerKCF_create()
                 else:
                     print("KCF Tracker is not available. Exiting.")
+                    cap.release()
+                    out.release()
+                    cv2.destroyAllWindows()
                     exit()
 
             # Initialize tracker with integer bounding box
@@ -94,9 +108,13 @@ while cap.isOpened():
             else:
                 print("Tracker initialization failed.")
                 tracking = False
+                # Write the frame without bounding box to the output video
+                out.write(frame)
         else:
             # No detections; display frame as is
             cv2.imshow("Tracking", frame)
+            # Write the frame to the output video
+            out.write(frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             continue
@@ -119,12 +137,15 @@ while cap.isOpened():
             print("Tracking failure detected. Reinitializing detection.")
             tracking = False
             tracker = None
-            continue  # Skip displaying the frame to re-run detection in the next loop
 
-    # Display result
-    cv2.imshow("Tracking", frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        # Display result
+        cv2.imshow("Tracking", frame)
+        # Write the frame to the output video
+        out.write(frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
+# Release everything when done
 cap.release()
+out.release()
 cv2.destroyAllWindows()

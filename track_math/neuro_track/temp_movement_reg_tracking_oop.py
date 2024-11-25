@@ -2,20 +2,28 @@ import cv2
 from ultralytics import YOLO
 import numpy as np
 
+
 class Config:
     """Configuration parameters for the object tracking application."""
-    MODEL_PATH = r"D:\pycharm_projects\yolov8\runs\detect\drone_v3_250ep_32bath2\weights\best.pt"
-    VIDEO_PATH = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_40_55.avi"
+    MODEL_PATH = r"D:\pycharm_projects\yolov8\runs\detect\drone_v7_200ep_32bath\weights\best.pt"
+    VIDEO_PATH = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_57_55.avi"
     # OUTPUT_VIDEO_PATH = r"C:\Users\User\Desktop\порівняння\Zir\output_tracking_3.mp4"  # New parameter
     CONFIDENCE_THRESHOLD = 0.15
-    IOU_THRESHOLD = 0.8
+    IOU_THRESHOLD = 0.6
     MOVEMENT_THRESHOLD = 1  # pixels
-    STATIONARY_FRAME_LIMIT = 5
+    STATIONARY_FRAME_LIMIT = 2
     DISPLAY_WINDOW_NAME = "Tracking"
     # VIDEO_CODEC = 'mp4v'  # Codec for MP4 files; can be changed as needed
 
+    # **New Configuration Parameters for Resizing**
+    RESIZE_DISPLAY = False  # Flag to control resizing
+    RESIZE_WIDTH = 1720  # Desired width after resizing
+    RESIZE_HEIGHT = 1080  # Desired height after resizing
+
+
 class TrackerManager:
     """Manages the creation and updating of the OpenCV tracker."""
+
     def __init__(self):
         self.tracker = None
 
@@ -49,6 +57,7 @@ class TrackerManager:
 
 class ObjectTracker:
     """Encapsulates the object detection and tracking logic."""
+
     def __init__(self, config):
         self.config = config
         self.model = YOLO(self.config.MODEL_PATH)
@@ -142,19 +151,22 @@ class ObjectTracker:
         x, y, w, h = bbox
         x2, y2 = x + w, y + h
         cv2.rectangle(frame, (x, y), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(frame, "Tracking", (x, y - 10),
+        cv2.putText(frame, "target", (x, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+
 
 class MainApp:
     """Main application class for running the object tracking."""
+
     def __init__(self, config):
         self.config = config
         self.object_tracker = ObjectTracker(config)
         self.cap = cv2.VideoCapture(self.config.VIDEO_PATH)
         self.out = None  # Initialize VideoWriter as None
 
-        # Initialize VideoWriter
-        # self.initialize_video_writer()
+        # Initialize VideoWriter if OUTPUT_VIDEO_PATH is provided
+        if hasattr(self.config, 'OUTPUT_VIDEO_PATH') and self.config.OUTPUT_VIDEO_PATH:
+            self.initialize_video_writer()
 
     def initialize_video_writer(self):
         """Initializes the VideoWriter object based on input video properties."""
@@ -214,8 +226,25 @@ class MainApp:
 
     def display_and_write_frame(self, frame):
         """Displays the frame and writes it to the output video."""
-        cv2.imshow(self.config.DISPLAY_WINDOW_NAME, frame)
-        # self.out.write(frame)  # Write the frame to the output video
+        # **Conditional Resizing Based on the Flag**
+        if self.config.RESIZE_DISPLAY:
+            frame_display = cv2.resize(frame, (self.config.RESIZE_WIDTH, self.config.RESIZE_HEIGHT))
+        else:
+            frame_display = frame
+
+        cv2.imshow(self.config.DISPLAY_WINDOW_NAME, frame_display)
+
+        # Write the original frame to the output video without resizing
+        # If you want to write the resized frame instead, uncomment the following lines:
+        if self.out:
+            if self.config.RESIZE_DISPLAY:
+                # Resize frame to match VideoWriter's expected size
+                frame_to_write = cv2.resize(frame, (self.config.RESIZE_WIDTH, self.config.RESIZE_HEIGHT))
+            else:
+                frame_to_write = frame
+            self.out.write(frame_to_write)
+
+        # Exit on 'q' key press
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.cleanup()
 
@@ -226,8 +255,9 @@ class MainApp:
         if self.out and self.out.isOpened():
             self.out.release()
         cv2.destroyAllWindows()
-        # print(f"Output video saved to {self.config.OUTPUT_VIDEO_PATH}")
+        print(f"Output video saved to {self.config.OUTPUT_VIDEO_PATH}" if self.out else "No output video was saved.")
         exit()
+
 
 if __name__ == "__main__":
     config = Config()

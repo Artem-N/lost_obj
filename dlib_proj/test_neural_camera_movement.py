@@ -13,9 +13,9 @@ torch.backends.cudnn.benchmark = True
 def send_ptz_command(code, speed=1):
     def _send_command():
         try:
-            camera_ip = "172.16.14.10"
+            camera_ip = "172.16.14.12"
             username = "admin"
-            password = "admin"
+            password = "ZirRobotics"
 
             # PTZ command URL
             url = f"http://{camera_ip}/cgi-bin/ptz.cgi?action=start&channel=0&code={code}&arg1={speed}&arg2={speed}&arg3=0"
@@ -34,9 +34,9 @@ def send_ptz_command(code, speed=1):
 def stop_ptz_command():
     def _stop_command():
         try:
-            camera_ip = "172.16.14.10"
+            camera_ip = "172.16.14.12"
             username = "admin"
-            password = "admin"
+            password = "ZirRobotics"
 
             directions = ["Left", "Right", "Up", "Down"]
             for direction in directions:
@@ -72,7 +72,7 @@ else:
 model.classes = [0]
 
 # Start video capture
-rtsp_url = "rtsp://username:password@172.16.14.10:554/cam/realmonitor?channel=2&subtype=0"
+rtsp_url = "rtsp://username:password@172.16.14.12:554/cam/realmonitor?channel=2&subtype=0"
 cap = cv2.VideoCapture(rtsp_url)
 
 if not cap.isOpened():
@@ -87,8 +87,8 @@ last_command_time = 0
 stop_time = None               # To track when the camera stopped
 
 # Movement duration parameters
-min_duration = 0.5             # Minimum movement duration
-max_duration = 1.0             # Maximum movement duration
+min_duration = 1.0             # Minimum movement duration
+max_duration = 2.0             # Maximum movement duration
 max_speed = 5                  # Maximum camera speed
 
 # Frame dimensions (will be set after the first frame is read)

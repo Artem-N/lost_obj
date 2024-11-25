@@ -4,7 +4,7 @@ import time
 from screeninfo import get_monitors
 import math
 
-video_path = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_31_27.avi"
+video_path = r"C:\Data\Video_IR\IR_AIRPLANE_016.mp4"
 
 
 def get_screen_size():

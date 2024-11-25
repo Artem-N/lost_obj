@@ -283,8 +283,8 @@ def embed_zoomed_object(frame, bbox):
     )
 
     # Convert grayscale zoomed ROI back to BGR if necessary
-    if len(zoomed_roi.shape) == 2:
-        zoomed_roi = cv2.cvtColor(zoomed_roi, cv2.COLOR_GRAY2BGR)
+    # if len(zoomed_roi.shape) == 2:
+    #     zoomed_roi = cv2.cvtColor(zoomed_roi, cv2.COLOR_GRAY2BGR)
 
     return zoomed_roi
 

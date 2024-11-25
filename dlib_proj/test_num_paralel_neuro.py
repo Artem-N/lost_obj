@@ -6,7 +6,7 @@ import time
 
 def worker(queue, window_name):
     # Load the model once per process
-    model = YOLO(r"D:\pycharm_projects\runs\detect\drone_v6_300ep_32bath\weights\best.pt")
+    model = YOLO("yolo11m.pt")
     prev_time = time.time()
     while True:
         frame = queue.get()
@@ -34,7 +34,7 @@ def worker(queue, window_name):
 
 
 def main():
-    num_workers = 1
+    num_workers = 8
     queues = [Queue(maxsize=20) for _ in range(num_workers)]
     processes = []
     window_names = [f"YOLO Output {i + 1}" for i in range(num_workers)]
@@ -45,7 +45,7 @@ def main():
         p.start()
         processes.append(p)
 
-    vid = r"C:\Users\User\Desktop\fly\GeneralPT4S4_2023_09_20_15_31_29.avi"
+    vid = r"C:\Users\User\Desktop\fly\drive-download-20241007T130521Z-001\Video_2.mp4"
     cap = cv2.VideoCapture(vid)
     try:
         while cap.isOpened():

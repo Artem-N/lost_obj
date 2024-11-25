@@ -91,7 +91,7 @@ def display_fps(frame, fps):
 
 def main():
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\WhatsApp Video 2024-09-14 at 12.40.19.mp4"
+    video_path = r"C:\Users\User\Desktop\fly\GeneralPT4S4_2023_09_20_15_40_44.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()

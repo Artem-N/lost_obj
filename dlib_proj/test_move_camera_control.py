@@ -3,7 +3,7 @@ from requests.auth import HTTPDigestAuth
 
 
 # Camera credentials and IP information
-camera_ip = "172.16.14.10"  # Replace with your actual IP address
+camera_ip = "172.16.14.12"  # Replace with your actual IP address
 username = "admin"           # Replace with your username
 password = "ZirRobotics"           # Replace with your password
 

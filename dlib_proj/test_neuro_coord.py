@@ -5,7 +5,7 @@ from ultralytics import YOLO
 model = YOLO('yolo11m.pt')  # Replace 'yolov8n.pt' with your model
 
 # Camera credentials and RTSP URL
-rtsp_url = "rtsp://username:password@172.16.14.10:554/cam/realmonitor?channel=1&subtype=0"
+rtsp_url = "rtsp://username:password@172.16.14.12:554/cam/realmonitor?channel=2&subtype=0"
 
 # Open the RTSP stream
 cap = cv2.VideoCapture(rtsp_url)

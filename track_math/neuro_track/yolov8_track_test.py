@@ -1,111 +1,146 @@
-import datetime
-from ultralytics import YOLO
 import cv2
-from deep_sort_realtime.deepsort_tracker import DeepSort
+import numpy as np
+import time
+from screeninfo import get_monitors
+from ultralytics import YOLO
 
+# Load YOLOv8 model
+model = YOLO(r"D:\pycharm_projects\yolov8\runs\detect\drone_v7_200ep_32bath\weights\best.pt")  # Use the path to your YOLOv8 model
 
-def create_video_writer(video_cap, output_filename):
+# Replace this with the actual class ID for "plane" from your model's dataset
+PLANE_CLASS_ID = 0  # Assuming 4 is the class ID for "plane" (e.g., in the COCO dataset)
 
-    # grab the width, height, and fps of the frames in the video stream.
-    frame_width = int(video_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(video_cap.get(cv2.CAP_PROP_FPS))
+def get_screen_size():
+    """Get the screen width and height."""
+    monitor = get_monitors()[0]  # Get the primary monitor's information
+    return monitor.width, monitor.height
 
-    # initialize the FourCC and a video writer object
-    fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    writer = cv2.VideoWriter(output_filename, fourcc, fps,
-                             (frame_width, frame_height))
+def initialize_video_capture(video_path):
+    """Initialize video capture from the provided video file path."""
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise Exception("Error: Could not open video.")  # Raise an error if the video cannot be opened
+    return cap
 
-    return writer
+def detect_objects_yolov8(frame):
+    """Detect objects in the frame using YOLOv8 and filter by the 'plane' class."""
+    results = model(frame)  # Perform inference with the YOLO model
+    detections = results[0].boxes.xyxy.cpu().numpy()  # Get bounding boxes as NumPy array
+    class_ids = results[0].boxes.cls.cpu().numpy()  # Get class IDs for each detection
 
-CONFIDENCE_THRESHOLD = 0.15
-GREEN = (0, 255, 0)
-WHITE = (255, 255, 255)
+    # Filter detections to include only those with the class ID for "plane"
+    plane_detections = []
+    for i, class_id in enumerate(class_ids):
+        if int(class_id) == PLANE_CLASS_ID:
+            plane_detections.append(detections[i])
 
-# initialize the video capture object
-video_cap = cv2.VideoCapture(r"C:\Users\User\Desktop\fly\GeneralPT4S4_2023_09_20_15_30_02.avi")
-# initialize the video writer object
-writer = create_video_writer(video_cap, "output.mp4")
+    return np.array(plane_detections)
 
-# load the pre-trained YOLOv8n model
-model = YOLO(r"D:\pycharm_projects\yolov8\runs\detect\drone_v3_250ep_32bath2\weights\best.pt")
-tracker = DeepSort(max_age=10)
+def track_objects_lucas_kanade(cap, screen_width, screen_height, crosshair_length):
+    """Track the object across video frames using YOLOv8 and Lucas-Kanade optical flow."""
+    lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+    trajectory_points = []
+    frame_center = (screen_width // 2, screen_height // 2)
+    old_gray = None
+    p0 = None
 
+    while cap.isOpened():
+        start_time = time.time()
 
-while True:
-    start = datetime.datetime.now()
+        ret, frame = cap.read()
+        if not ret or frame is None:
+            print("Error: Could not read the frame.")
+            break
 
-    ret, frame = video_cap.read()
+        frame = cv2.resize(frame, (screen_width, screen_height))
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    if not ret:
-        break
+        if p0 is None:
+            # If no points to track, use YOLO to detect the plane
+            detections = detect_objects_yolov8(frame)
 
-    # run the YOLO model on the frame
-    detections = model(frame)[0]
+            if len(detections) > 0:
+                # Use the first detected plane for tracking
+                x1, y1, x2, y2 = detections[0][:4]
+                bbox_center = (int((x1 + x2) / 2), int((y1 + y2) / 2))
+                p0 = np.array([[bbox_center]], dtype=np.float32)
+                old_gray = frame_gray.copy()
+        else:
+            # If points are available, use Lucas-Kanade to track them
+            p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
+            if st is not None and len(p1) > 0:
+                good_new = p1[st == 1]
+                good_old = p0[st == 1]
 
-    # initialize the list of bounding boxes and confidences
-    results = []
+                for i, (new, old) in enumerate(zip(good_new, good_old)):
+                    a, b = new.ravel()
+                    c, d = old.ravel()
+                    cv2.line(frame, (int(c), int(d)), (int(a), int(b)), (0, 255, 0), 2)
+                    cv2.circle(frame, (int(a), int(b)), 5, (0, 0, 255), -1)
+                    trajectory_points.append((a, b))
 
-    ######################################
-    # DETECTION
-    ######################################
+                p0 = good_new.reshape(-1, 1, 2)
+                old_gray = frame_gray.copy()
+            else:
+                # Tracking failed, reset points
+                print("Tracking lost, invoking YOLO for re-detection.")
+                p0 = None
 
-    # loop over the detections
-    for data in detections.boxes.data.tolist():
-        # extract the confidence (i.e., probability) associated with the prediction
-        confidence = data[4]
+        draw_crosshair(frame)
+        fps = calculate_fps(start_time)
+        display_fps(frame, fps)
+        cv2.imshow('Frame', frame)
 
-        # filter out weak detections by ensuring the
-        # confidence is greater than the minimum confidence
-        if float(confidence) < CONFIDENCE_THRESHOLD:
-            continue
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            break
 
-        # if the confidence is greater than the minimum confidence,
-        # get the bounding box and the class id
-        xmin, ymin, xmax, ymax = int(data[0]), int(data[1]), int(data[2]), int(data[3])
-        class_id = int(data[5])
-        # add the bounding box (x, y, w, h), confidence and class id to the results list
-        results.append([[xmin, ymin, xmax - xmin, ymax - ymin], confidence, class_id])
+def draw_crosshair(frame):
+    """Draw a crosshair across the entire video frame."""
+    color = (0, 255, 0)  # Green crosshair
+    thickness = 1  # Thickness of the crosshair lines
 
-    ######################################
-    # TRACKING
-    ######################################
+    # Get the center of the frame
+    center_x = frame.shape[1] // 2  # Width of the frame
+    center_y = frame.shape[0] // 2  # Height of the frame
 
-    # update the tracker with the new detections
-    tracks = tracker.update_tracks(results, frame=frame)
-    # loop over the tracks
-    for track in tracks:
-        # if the track is not confirmed, ignore it
-        if not track.is_confirmed():
-            continue
+    # Draw the horizontal line across the entire width of the frame
+    cv2.line(frame, (0, center_y), (frame.shape[1], center_y), color, thickness)
 
-        # get the track id and the bounding box
-        track_id = track.track_id
-        ltrb = track.to_ltrb()
+    # Draw the vertical line across the entire height of the frame
+    cv2.line(frame, (center_x, 0), (center_x, frame.shape[0]), color, thickness)
 
-        xmin, ymin, xmax, ymax = int(ltrb[0]), int(
-            ltrb[1]), int(ltrb[2]), int(ltrb[3])
-        # draw the bounding box and the track id
-        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), GREEN, 2)
-        cv2.rectangle(frame, (xmin, ymin - 20), (xmin + 20, ymin), GREEN, -1)
-        cv2.putText(frame, str(track_id), (xmin + 5, ymin - 8),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 2)
+def calculate_fps(start_time):
+    """Calculate the frames per second (FPS)."""
+    end_time = time.time()
+    fps = 1 / (end_time - start_time)
+    return fps
 
-    # end time to compute the fps
-    end = datetime.datetime.now()
-    # show the time it took to process 1 frame
-    print(f"Time to process 1 frame: {(end - start).total_seconds() * 1000:.0f} milliseconds")
-    # calculate the frame per second and draw it on the frame
-    fps = f"FPS: {1 / (end - start).total_seconds():.2f}"
-    cv2.putText(frame, fps, (50, 50),
-                cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 8)
+def display_fps(frame, fps):
+    """Display the FPS on the frame."""
+    cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
 
-    # show the frame to our screen
-    cv2.imshow("Frame", frame)
-    writer.write(frame)
-    if cv2.waitKey(1) == ord("q"):
-        break
+def main():
+    # Parameters for fine-tuning the algorithm
+    CROSSHAIR_LENGTH = 25  # Length of the crosshair lines in pixels
 
-video_cap.release()
-writer.release()
-cv2.destroyAllWindows()
+    # Path to the video file
+    video_path = r"C:\Users\User\Desktop\bpla\WhatsApp Video 2024-10-24 at 15.16.26.mp4"
+
+    # Get screen size
+    screen_width, screen_height = get_screen_size()
+
+    # Initialize video capture
+    cap = initialize_video_capture(video_path)
+
+    cv2.namedWindow('Frame', cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty('Frame', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    # Track the object across frames using YOLOv8 and Lucas-Kanade
+    track_objects_lucas_kanade(cap, screen_width, screen_height, CROSSHAIR_LENGTH)
+
+    # Release video capture and close all frames
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()

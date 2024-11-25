@@ -10,7 +10,7 @@ from collections import deque
 # ===========================
 
 # Video Configuration
-VIDEO_PATH = r"C:\Users\User\Desktop\fly\GENERIC_RTSP-realmonitor_2023_09_20_15_38_57.avi"
+VIDEO_PATH = r"C:\Users\User\Desktop\12653365_2160_3840_30fps.mp4"
 
 # Thresholding and Morphological Operations
 THRESHOLD_VALUE = 30  # Threshold value for binary thresholding
@@ -20,7 +20,7 @@ DILATION_ITERATIONS = 3  # Number of dilation iterations
 EROSION_ITERATIONS = 1  # Number of erosion iterations
 
 # Tracking Parameters
-TARGET_MEMORY_FRAMES = 50  # Number of frames to "remember" the target before resetting
+TARGET_MEMORY_FRAMES = 5  # Number of frames to "remember" the target before resetting
 MAX_DISTANCE = 1500  # Maximum allowed distance in pixels for contour matching
 BBOX_SIZE_THRESHOLD = 5  # Bounding box size threshold multiplier
 DYNAMIC_SPEED_MULTIPLIER = 500  # Multiplier for dynamic speed threshold
@@ -51,7 +51,7 @@ ZOOMED_ROI_SIZE = THUMBNAIL_SIZE  # Size of the zoomed ROI (width, height)
 # Frame Skipping Configuration
 # ===========================
 
-FRAME_SKIP = 3  # Process every 2nd frame
+FRAME_SKIP = 2  # Process every 2nd frame
 
 # ===========================
 # Kalman Tracker Class

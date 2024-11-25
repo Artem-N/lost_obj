@@ -5,7 +5,7 @@ from screeninfo import get_monitors
 from ultralytics import YOLO
 
 # Load YOLOv8 model
-model = YOLO(r"D:\pycharm_projects\yolov8\runs\detect\drone_v1_200ep_32bath\weights\best.pt")  # Use the path to your YOLOv8 model
+model = YOLO(r"D:\pycharm_projects\yolov8\runs\detect\drone_v7_200ep_32bath\weights\best.pt")  # Use the path to your YOLOv8 model
 
 # Replace this with the actual class ID for "plane" from your model's dataset
 PLANE_CLASS_ID = 0  # Assuming 4 is the class ID for "plane" (e.g., in the COCO dataset)
@@ -134,10 +134,11 @@ def main():
     CROSSHAIR_LENGTH = 25  # Length of the crosshair lines in pixels
 
     # Path to the video file
-    video_path = r"C:\Users\User\Desktop\fly\WhatsApp Video 2024-09-14 at 12.40.19.mp4"
+    video_path = r"C:\Users\User\Desktop\fly\GeneralPT4S4_2023_09_20_15_28_21.avi"
 
     # Get screen size
     screen_width, screen_height = get_screen_size()
+
 
     # Initialize video capture
     cap = initialize_video_capture(video_path)

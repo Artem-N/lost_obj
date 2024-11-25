@@ -3,17 +3,17 @@ from ultralytics import YOLO
 import cv2
 
 # Load the YOLOv8 model (replace with your custom model path)
-model = YOLO(r"D:\pycharm_projects\yolov8\runs\detect\drone_v3_250ep_32bath2\weights\best.pt")
+model = YOLO(r"D:\pycharm_projects\yolov8\runs\detect\drone_v7_200ep_32bath\weights\best.pt")
 model.conf = 0.15  # Adjust confidence threshold as needed
 
 # Open the video file
-cap = cv2.VideoCapture(r"C:\Users\User\Desktop\fly\85d5885f-710b-4688-a864-1c0ee72b5df1.MP4")
+cap = cv2.VideoCapture(r"C:\Users\User\Desktop\fly\2024.mp4")
 
 # Frame processing parameters
 detector_interval = 50  # Run detector every 5 frames
 frame_count = 0  # Initialize frame counter
 no_movement_count = 0  # Count frames where no movement is detected
-movement_threshold = 100  # Number of frames without movement to trigger detection
+movement_threshold = 10  # Number of frames without movement to trigger detection
 tracker_initialized = False  # Tracker status
 
 # Initialize OpenCV tracker (CSRT in this case)
