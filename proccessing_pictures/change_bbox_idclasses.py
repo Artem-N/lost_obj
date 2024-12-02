@@ -1,17 +1,24 @@
 import os
+from tqdm import tqdm
 
 # Define the mapping of classes
 class_mapping = {
-    1: 0
+    0: 0,
+    1: 0,
+    2: 0,
+    3: 0
 }
 
 def update_class_numbers(input_folder, output_folder):
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
 
-    # Iterate over each file in the folder
-    for filename in os.listdir(input_folder):
-        if filename.endswith(".txt"):
+    # Get the list of files to process
+    txt_files = [f for f in os.listdir(input_folder) if f.endswith(".txt")]
+
+    # Use tqdm for progress tracking
+    with tqdm(total=len(txt_files), desc="Processing files") as pbar:
+        for filename in txt_files:
             input_filepath = os.path.join(input_folder, filename)
             output_filepath = os.path.join(output_folder, filename)
 
@@ -34,9 +41,12 @@ def update_class_numbers(input_folder, output_folder):
                 for updated_line in updated_lines:
                     file.write(updated_line + "\n")
 
+            # Update the progress bar
+            pbar.update(1)
+
 # Specify the input and output folders
-input_folder = r"E:\datasets\PeopleOnGrass\PeopleOnGrass_yolo_annotations_train"
-output_folder = r"E:\datasets\PeopleOnGrass\PeopleOnGrass_yolo_annotations_train"
+input_folder = r"E:\video_for_test\fly\labels\labels_rotate"
+output_folder = r"E:\video_for_test\fly\labels\labels_rotate"
 update_class_numbers(input_folder, output_folder)
 
 print("Class numbers updated successfully. New files are saved in the output folder.")

@@ -6,12 +6,12 @@ import shutil  # Import shutil for file copying
 from tqdm import tqdm  # Import tqdm for the progress bar
 
 # Define the paths to the images and annotations folders
-images_folder = r"E:\datasets\drone_data\dronevbird\test\images"  # Path to your images folder
-annotations_folder = r"E:\datasets\drone_data\dronevbird\test\labels"  # Path to your annotations folder
+images_folder = r"E:\video_for_test\fly\labels\images"  # Path to your images folder
+annotations_folder = r"E:\video_for_test\fly\labels\labels"  # Path to your annotations folder
 
 # Define the paths to the output folders
-output_images_folder = r"E:\datasets\drone_data\dronevbird\test\images_noise"  # Path to your output images folder
-output_annotations_folder = r"E:\datasets\drone_data\dronevbird\test\labels_noise"  # Path to your output annotations folder
+output_images_folder = r"E:\video_for_test\fly\labels\images_noise"  # Path to your output images folder
+output_annotations_folder = r"E:\video_for_test\fly\labels\labels_noise"  # Path to your output annotations folder
 
 # Create the output directories if they don't exist
 os.makedirs(output_images_folder, exist_ok=True)

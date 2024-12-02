@@ -4,12 +4,12 @@ import random
 from tqdm import tqdm  # Import tqdm for progress tracking
 
 # Set the paths for the source folders and the destination folders
-source_images_folder = r"E:\datasets\Odesa\thermal_pic_worked\images_rotate"  # Folder containing the images
-source_labels_folder = r"E:\datasets\Odesa\thermal_pic_worked\labels_new_rotate"  # Folder containing the annotation files
-train_images_folder = r"D:\Odesa\train\images"
-test_images_folder = r"D:\Odesa\test\images"
-train_labels_folder = r"D:\Odesa\train\labels"
-test_labels_folder = r"D:\Odesa\test\labels"
+source_images_folder = r"E:\video_for_test\fly\labels\images"  # Folder containing the images
+source_labels_folder = r"E:\video_for_test\fly\labels\labels"  # Folder containing the annotation files
+train_images_folder = r"E:\datasets\dataset\train\images"
+test_images_folder = r"E:\datasets\dataset\valid\images"
+train_labels_folder = r"E:\datasets\dataset\train\labels"
+test_labels_folder = r"E:\datasets\dataset\valid\labels"
 
 # Create the destination directories if they don't exist
 os.makedirs(train_images_folder, exist_ok=True)

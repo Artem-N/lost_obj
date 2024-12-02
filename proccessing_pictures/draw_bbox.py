@@ -44,8 +44,8 @@ def draw_bounding_boxes(image_path, annotation_path, output_path):
 
 
 # Example usage
-image_folder = r"E:\datasets\drone_data\dronevbird\test\images"
-annotation_folder = r"E:\datasets\drone_data\dronevbird\test\labels_rotate"
+image_folder = r"E:\video_for_test\fly\labels\images"
+annotation_folder = r"E:\video_for_test\fly\labels\labels"
 output_folder = r"C:\Users\User\Desktop\check_bbox_correct"
 
 # Ensure output folder exists
