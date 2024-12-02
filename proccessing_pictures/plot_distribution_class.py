@@ -30,7 +30,7 @@ def plot_class_distribution(class_counts):
 
 
 # Example usage
-directory = r"E:\datasets\Odesa\train\labels"
+directory = r"E:\datasets\PeopleOnGrass\PeopleOnGrass_yolo_annotations_train"
 class_counts = read_classes_from_files(directory)
 plot_class_distribution(class_counts)
 

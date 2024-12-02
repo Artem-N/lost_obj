@@ -2,9 +2,9 @@ import os
 import shutil
 
 # Define the paths to the folders
-images_folder = r"E:\datasets\synthetic_car_dataset\images"
-annotations_folder = r"E:\datasets\synthetic_car_dataset\labels_new"
-output_folder = r"E:\datasets\synthetic_car_dataset\images_new"
+images_folder = r"D:\odessa\train\images"
+annotations_folder = r"D:\odessa\train\labels"
+output_folder = r"D:\odessa\train\images_n"
 
 # Create the output folder if it doesn't exist
 os.makedirs(output_folder, exist_ok=True)

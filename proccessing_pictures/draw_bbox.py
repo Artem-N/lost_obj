@@ -1,9 +1,10 @@
 import cv2
 import os
-from PIL import Image
+from tqdm import tqdm  # Import tqdm for the progress bar
 
 
 def draw_bounding_boxes(image_path, annotation_path, output_path):
+    """Draw bounding boxes on the image based on annotation data and save the result."""
     # Load the image
     image = cv2.imread(image_path)
     if image is None:
@@ -39,24 +40,26 @@ def draw_bounding_boxes(image_path, annotation_path, output_path):
     # Save the image with bounding boxes
     output_image_path = os.path.join(output_path, os.path.basename(image_path))
     cv2.imwrite(output_image_path, image)
-    print(f"Output saved to {output_image_path}")
+    # print(f"Output saved to {output_image_path}")
 
 
 # Example usage
-image_folder = r"E:\datasets\Odesa\train\images"
-annotation_folder = r"E:\datasets\Odesa\train\labels"
+image_folder = r"E:\datasets\drone_data\dronevbird\test\images"
+annotation_folder = r"E:\datasets\drone_data\dronevbird\test\labels_rotate"
 output_folder = r"C:\Users\User\Desktop\check_bbox_correct"
 
 # Ensure output folder exists
 os.makedirs(output_folder, exist_ok=True)
 
-# Iterate through each image file in the image folder
-for image_filename in os.listdir(image_folder):
-    if image_filename.endswith('.jpg') or image_filename.endswith('.png'):
-        image_path = os.path.join(image_folder, image_filename)
-        annotation_path = os.path.join(annotation_folder, os.path.splitext(image_filename)[0] + '.txt')
+# Get a list of image files to process
+image_files = [f for f in os.listdir(image_folder) if f.endswith('.jpg') or f.endswith('.png')]
 
-        if os.path.exists(annotation_path):
-            draw_bounding_boxes(image_path, annotation_path, output_folder)
-        else:
-            print(f"Annotation file for {image_filename} not found.")
+# Iterate through each image file with a progress bar
+for image_filename in tqdm(image_files, desc="Processing images", unit="image"):
+    image_path = os.path.join(image_folder, image_filename)
+    annotation_path = os.path.join(annotation_folder, os.path.splitext(image_filename)[0] + '.txt')
+
+    if os.path.exists(annotation_path):
+        draw_bounding_boxes(image_path, annotation_path, output_folder)
+    else:
+        print(f"Annotation file for {image_filename} not found.")

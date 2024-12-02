@@ -3,12 +3,12 @@ import random
 import string
 
 # Define the paths to the folders
-images_folder = r"E:\datasets\Odesa\train\images"
-labels_folder = r"E:\datasets\Odesa\train\labels"
+images_folder = r"E:\datasets\Odesa\train_odesa+rivne\train\images"
+labels_folder = r"E:\datasets\Odesa\train_odesa+rivne\train\labels_new"
 
 
 # Function to generate a random string of 20 characters
-def generate_random_name(length=16):
+def generate_random_name(length=10):
     letters = string.ascii_letters + string.digits
     return ''.join(random.choice(letters) for i in range(length))
 
@@ -16,6 +16,12 @@ def generate_random_name(length=16):
 # Get the list of image files and label files
 image_files = os.listdir(images_folder)
 label_files = os.listdir(labels_folder)
+
+# Get the total number of image files for progress tracking
+total_files = len(image_files)
+
+# Initialize the counter
+processed_files = 0
 
 # Loop through the image files
 for image_file in image_files:
@@ -43,5 +49,10 @@ for image_file in image_files:
         # Rename the image and label files
         os.rename(old_image_path, new_image_path)
         os.rename(old_label_path, new_label_path)
+
+    # Update the counter and print progress
+    processed_files += 1
+    progress = (processed_files / total_files) * 100
+    print(f"Progress: {processed_files}/{total_files} files processed ({progress:.2f}%)")
 
 print("Renaming completed successfully.")

@@ -5,40 +5,11 @@ import numpy as np
 
 
 def rotate_box(corners, angle, cx, cy, h, w):
-    """Rotate the bounding box.
-
-    Parameters
-    ----------
-    corners : numpy.ndarray
-        Numpy array of shape `N x 8` containing N bounding boxes each described by their
-        corner co-ordinates `x1 y1 x2 y2 x3 y3 x4 y4`
-
-    angle : float
-        Angle by which the image is to be rotated (in degrees).
-
-    cx : int
-        x coordinate of the center of rotation.
-
-    cy : int
-        y coordinate of the center of rotation.
-
-    h : int
-        Height of the image.
-
-    w : int
-        Width of the image.
-
-    Returns
-    -------
-    numpy.ndarray
-        Numpy array of shape `N x 8` containing N rotated bounding boxes each described by their
-        corner coordinates `x1 y1 x2 y2 x3 y3 x4 y4`.
-    """
+    """Rotate the bounding box."""
     corners = corners.reshape(-1, 2)
     corners = np.hstack((corners, np.ones((corners.shape[0], 1))))
 
     M = cv2.getRotationMatrix2D((cx, cy), angle, 1.0)
-
     cos = np.abs(M[0, 0])
     sin = np.abs(M[0, 1])
 
@@ -57,10 +28,10 @@ def rotate_box(corners, angle, cx, cy, h, w):
 
 
 # Define paths
-images_folder = r"C:\Users\User\Desktop\fly\wing_train_picture"
-annotations_folder = r"C:\Users\User\Desktop\fly\labels"
-rotated_images_folder = r"C:\Users\User\Desktop\fly\wing_train_picture_rotate"
-rotated_annotations_folder = r"C:\Users\User\Desktop\fly\labels_rotate"
+images_folder = r"E:\datasets\drone_data\dronevbird\test\images"
+annotations_folder = r"E:\datasets\drone_data\dronevbird\test\labels"
+rotated_images_folder = r"E:\datasets\drone_data\dronevbird\test\images"
+rotated_annotations_folder = r"E:\datasets\drone_data\dronevbird\test\labels_rotate"
 
 # Create output directories if they don't exist
 os.makedirs(rotated_images_folder, exist_ok=True)
@@ -68,6 +39,9 @@ os.makedirs(rotated_annotations_folder, exist_ok=True)
 
 # Get list of image files
 image_files = [f for f in os.listdir(images_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+
+total_images = len(image_files)
+processed_images = 0
 
 for img_file in image_files:
     # Read the image
@@ -131,12 +105,7 @@ for img_file in image_files:
             y_max = y + bh / 2
 
             # Corners of the bounding box
-            corners = np.array([[
-                x_min, y_min,
-                x_max, y_min,
-                x_max, y_max,
-                x_min, y_max
-            ]], dtype=np.float32)
+            corners = np.array([[x_min, y_min, x_max, y_min, x_max, y_max, x_min, y_max]], dtype=np.float32)
 
             # Rotate the bounding box
             rotated_corners = rotate_box(corners, angle, cx, cy, h, w)
@@ -176,3 +145,10 @@ for img_file in image_files:
             f.writelines(new_lines)
     else:
         print(f"Annotation file not found for image {img_file}.")
+
+    # Update and print progress
+    processed_images += 1
+    progress = (processed_images / total_images) * 100
+    print(f"Progress: {processed_images}/{total_images} images processed ({progress:.2f}%)")
+
+print("Rotation and annotation update completed successfully.")

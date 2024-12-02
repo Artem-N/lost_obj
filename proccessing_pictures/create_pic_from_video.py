@@ -3,6 +3,7 @@ import os
 import random
 import string
 
+
 # Function to save frames from video
 def save_frames_from_video(video_path, output_folder, frame_interval=10):
     # Create the output folder if it doesn't exist

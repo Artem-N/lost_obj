@@ -2,9 +2,7 @@ import os
 
 # Define the mapping of classes
 class_mapping = {
-    0: 1,
-    1: 0,
-    2: 2,
+    1: 0
 }
 
 def update_class_numbers(input_folder, output_folder):
@@ -37,8 +35,8 @@ def update_class_numbers(input_folder, output_folder):
                     file.write(updated_line + "\n")
 
 # Specify the input and output folders
-input_folder = r"E:\datasets\hituav-a-highaltitude-infrared-thermal-dataset\hit-uav\labels\test_new"
-output_folder = r"E:\datasets\hituav-a-highaltitude-infrared-thermal-dataset\hit-uav\labels\test_new"
+input_folder = r"E:\datasets\PeopleOnGrass\PeopleOnGrass_yolo_annotations_train"
+output_folder = r"E:\datasets\PeopleOnGrass\PeopleOnGrass_yolo_annotations_train"
 update_class_numbers(input_folder, output_folder)
 
 print("Class numbers updated successfully. New files are saved in the output folder.")
