@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Check Camera - Anomaly Detection System{% endblock %}
+
+{% block head %}
+    <style>
+        /* Specific styles for check_camera.html */
+        .video-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        .video-container img {
+            border: 5px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            max-width: 100%;
+            height: auto;
+        }
+
+        .exit-button {
+            margin-top: 20px;
+        }
+
+        .exit-button button {
+            padding: 10px 20px;
+            background-color: #e74c3c; /* Red color */
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .exit-button button:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
+
+        /* Responsive Design for check_camera.html */
+        @media (max-width: 600px) {
+            .video-container img {
+                width: 100%;
+                height: auto;
+            }
+
+            .exit-button button {
+                width: 100%;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="video-container">
+        <img src="{{ url_for('check_camera_feed') }}" alt="Camera Feed">
+        <div class="exit-button">
+            <form action="{{ url_for('welcome') }}" method="get">
+                <button type="submit">Exit to Main Menu</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // Optional: Add JavaScript if needed
+    </script>
+{% endblock %}

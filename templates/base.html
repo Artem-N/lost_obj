@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Anomaly Detection System{% endblock %}</title>
+    <style>
+        /* Include all common CSS here */
+        /* Reset some default styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            /* Background Image from static folder */
+            background: url("{{ url_for('static', filename='background.png') }}") no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Flash Message Pop-up Styles */
+        #flash-messages {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .flash-message {
+            padding: 15px 25px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1.1em;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            opacity: 0;
+            animation: slideDownFadeOut 5.5s forwards;
+            display: flex;
+            align-items: center;
+        }
+
+        .flash-message.success {
+            background-color: #27ae60; /* Green */
+        }
+
+        .flash-message.error {
+            background-color: #c0392b; /* Red */
+        }
+
+        .flash-message i {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .flash-message .close-button {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.2em;
+            margin-left: auto;
+            cursor: pointer;
+        }
+
+        @keyframes slideDownFadeOut {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            90% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        /* Responsive Design for Flash Messages */
+        @media (max-width: 600px) {
+            .flash-message {
+                font-size: 1em;
+            }
+            .flash-message i {
+                font-size: 1em;
+            }
+        }
+    </style>
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTTXRNv6Uy1k5DqaXv3N7e1AZHlsICFlJj8C5w9r5nW8EUsQZFsBjV4YPVYIl1HkVsskLve6TA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Flash Message Pop-up -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}" role="alert" aria-live="assertive">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle" aria-hidden="true"></i>
+                        {% elif category == 'error' %}
+                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button class="close-button" onclick="this.parentElement.style.display='none';">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <!-- Common JavaScript -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

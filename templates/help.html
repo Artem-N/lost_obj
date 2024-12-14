@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Help & Instructions</title>
+    <style>
+        /* Reset some default styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            /* Background Image from static folder */
+            background: url("{{ url_for('static', filename='background.png') }}") no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .overlay {
+            background: rgba(0, 0, 0, 0.8);
+            flex: 1;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+            overflow-y: auto;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 1000px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+            color: #FFD700;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+        p, li {
+            font-size: 1.2em;
+            text-align: left;
+            max-width: 800px;
+            margin: 10px auto;
+            line-height: 1.6;
+            color: #ecf0f1;
+        }
+
+        ul {
+            list-style-type: disc;
+            padding-left: 40px;
+        }
+
+        b {
+            color: #FFD700;
+        }
+
+        .button-group {
+            margin-top: 40px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .button-group form {
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .button-group button {
+            padding: 12px 25px;
+            background-color: #e74c3c; /* Red color */
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button-group button:hover {
+            background-color: #c0392b;
+            transform: scale(1.02);
+        }
+
+        /* Exit to Main Menu Button */
+        .exit-main-menu {
+            margin-top: auto; /* Pushes the button to the bottom */
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .exit-main-menu form {
+            display: inline-block;
+        }
+
+        .exit-main-menu button {
+            padding: 12px 25px;
+            background-color: #e74c3c; /* Red color */
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .exit-main-menu button:hover {
+            background-color: #c0392b;
+            transform: scale(1.02);
+        }
+
+        /* Flash Message Pop-up Styles */
+        #flash-messages {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .flash-message {
+            padding: 15px 25px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1.1em;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            opacity: 0;
+            animation: slideDownFadeOut 5.5s forwards;
+            display: flex;
+            align-items: center;
+        }
+
+        .flash-message.success {
+            background-color: #27ae60; /* Green */
+        }
+
+        .flash-message.error {
+            background-color: #c0392b; /* Red */
+        }
+
+        .flash-message i {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        @keyframes slideDownFadeOut {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            90% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .overlay {
+                padding: 20px 15px;
+                max-width: 90%;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            h2 {
+                font-size: 1.5em;
+            }
+            p, li {
+                font-size: 1em;
+            }
+            .button-group button,
+            .exit-main-menu button {
+                width: 100%;
+                padding: 10px 0;
+                font-size: 1em;
+            }
+            .flash-message {
+                font-size: 1em;
+            }
+            .flash-message i {
+                font-size: 1em;
+            }
+        }
+    </style>
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTTXRNv6Uy1k5DqaXv3N7e1AZHlsICFlJj8C5w9r5nW8EUsQZFsBjV4YPVYIl1HkVsskLve6TA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <!-- Flash Message Pop-up -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}" role="alert" aria-live="assertive">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle" aria-hidden="true"></i>
+                        {% elif category == 'error' %}
+                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {% endif %}
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="overlay">
+        <h1>Help & Instructions</h1>
+        <p>Welcome to our Anomaly Detection System! This guide will help you navigate and utilize the application's features effectively.</p>
+
+        <h2>Getting Started</h2>
+        <ul>
+            <li><b>Start the Program:</b> On the welcome page, click "Start the Program" to access the live video feed and begin monitoring for anomalies.</li>
+        </ul>
+
+        <h2>Setting Up</h2>
+        <ul>
+            <li><b>Configure Settings:</b> Navigate to the "Settings" page to adjust parameters such as Persistence Threshold, Minimum Object Size, and Video Dimensions. These settings are saved automatically, ensuring they are pre-populated the next time you visit the Settings page.</li>
+            <li><b>Set Baseline:</b> On the video page, click "Set Baseline" to capture the current scene as a reference. Ensure that the scene is free from any moving objects when setting the baseline for optimal anomaly detection.</li>
+        </ul>
+
+        <h2>Managing Anomalies</h2>
+        <ul>
+            <li><b>View Anomalies:</b> Once a baseline is set, any objects that appear and remain in the scene beyond the specified persistence threshold will be highlighted with red bounding boxes labeled "Anomalous".</li>
+            <li><b>Reset Anomalies:</b> If you want to clear all currently detected anomalies without altering the baseline, click "Reset Anomalies". This will remove all tracked anomalies, allowing new ones to be detected based on the existing baseline.</li>
+            <li><b>Reset Baseline:</b> To clear the current baseline and tracked anomalies, click "Reset Baseline". After resetting, you can set a new baseline by capturing the current frame, which is useful if the environment has changed or to improve detection accuracy.</li>
+        </ul>
+
+        <h2>Understanding Key Features</h2>
+        <ul>
+            <li><b>Persistence Threshold:</b> Determines the number of consecutive frames an object must persist in the scene to be considered anomalous. A higher value reduces sensitivity to transient movements.</li>
+            <li><b>Minimum Object Size:</b> Sets the minimum size (width and height) for detected objects to be tracked. This helps in filtering out noise and irrelevant small movements.</li>
+            <li><b>Video Dimensions:</b> Configures the resolution of the video feed. Higher resolutions provide more detail but may require more processing power.</li>
+        </ul>
+
+        <h2>Best Practices</h2>
+        <ul>
+            <li>Ensure the camera is stable and positioned to capture the desired area effectively.</li>
+            <li>Set a baseline when the scene is static to prevent existing objects from being detected as anomalies.</li>
+            <li>Adjust the Persistence Threshold and Minimum Object Size based on your specific monitoring needs and environment.</li>
+            <li>Avoid moving objects during baseline setting to ensure accurate anomaly detection.</li>
+        </ul>
+    </div>
+
+    <!-- Exit to Main Menu Button -->
+    <div class="exit-main-menu">
+        <form action="{{ url_for('welcome') }}" method="get">
+            <button type="submit">Exit to Main Menu</button>
+        </form>
+    </div>
+
+    <script>
+        // Function to hide each flash message after 5 seconds
+        window.onload = function() {
+            var messages = document.querySelectorAll('.flash-message');
+            messages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-20px)';
+                    // Optionally, remove the element after transition
+                    setTimeout(function() {
+                        message.remove();
+                    }, 500); // Match the CSS transition duration
+                }, 5000); // 5000 milliseconds = 5 seconds
+            });
+        };
+    </script>
+</body>
+</html>

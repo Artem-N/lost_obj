@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Anomaly Detection Video</title>
+    <style>
+        /* Existing styles */
+
+        /* Reset some default styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #2c3e50; /* Darker background for better contrast */
+            color: #ecf0f1; /* Light text for readability */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-bottom: 50px; /* Space for bottom button */
+            position: relative;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 0;
+            background: #34495e; /* Slightly lighter than body for distinction */
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 2em;
+            color: #ecf0f1;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 1200px;
+            margin: 30px 0;
+        }
+
+        /* Status Message Section */
+        .status-message {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            padding: 15px 25px;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .status-success {
+            background-color: #27ae60; /* Green */
+            color: #ecf0f1;
+        }
+
+        .status-error {
+            background-color: #c0392b; /* Red */
+            color: #ecf0f1;
+        }
+
+        /* Video Feed Section */
+        .video-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .video-section img {
+            border: 5px solid #34495e;
+            border-radius: 10px;
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Button Groups */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .button-group form {
+            margin: 5px;
+        }
+
+        .button-group button {
+            padding: 12px 25px;
+            background-color: #2980b9; /* Blue */
+            color: #ecf0f1;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            min-width: 150px;
+        }
+
+        .button-group button:hover {
+            background-color: #3498db;
+            transform: scale(1.05);
+        }
+
+        .button-group button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Specific Button Groups Styling */
+        .baseline-controls {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .exit-settings {
+            background-color: #16a085; /* Teal */
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .exit-main-menu {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .exit-main-menu button {
+            background-color: #c0392b; /* Red */
+        }
+
+        .exit-main-menu button:hover {
+            background-color: #e74c3c;
+        }
+
+        /* Flash Message Pop-up Styles */
+        #flash-messages {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .flash-message {
+            padding: 15px 25px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1.1em;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            opacity: 0;
+            animation: slideDown 0.5s forwards;
+        }
+
+        .flash-message.success {
+            background-color: #27ae60; /* Green */
+        }
+
+        .flash-message.error {
+            background-color: #c0392b; /* Red */
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .video-section {
+                flex: 1 1 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button-group form {
+                width: 100%;
+            }
+
+            .button-group button {
+                width: 80%;
+                min-width: unset;
+            }
+
+            .exit-main-menu {
+                position: static;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Flash Message Pop-up -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <header>
+        <h1>Real-time Anomaly Detection</h1>
+    </header>
+
+    <div class="content">
+        <!-- Status Message Section -->
+        {% if baseline_set %}
+        <div class="status-message status-success">
+            Baseline is set. Objects left behind will be marked after persisting.
+        </div>
+        {% else %}
+        <div class="status-message status-error">
+            No baseline set. Press "Set Baseline" to begin detection.
+        </div>
+        {% endif %}
+
+        <!-- Video Feed Section -->
+        <div class="video-section">
+            <img src="{{ url_for('video_feed') }}" alt="Video feed">
+
+            <!-- Baseline Controls Button Group -->
+            <div class="button-group baseline-controls">
+                <!-- Set Baseline button -->
+                <form action="{{ url_for('set_baseline') }}" method="get">
+                    {% if not baseline_set %}
+                    <button type="submit">Set Baseline</button>
+                    {% else %}
+                    <button type="submit" disabled>Set Baseline</button>
+                    {% endif %}
+                </form>
+
+                <!-- Reset Baseline button -->
+                <form action="{{ url_for('reset_baseline') }}" method="get">
+                    <button type="submit">Reset Baseline</button>
+                </form>
+
+                <!-- Reset Anomalies button -->
+                <form action="{{ url_for('reset_anomalies') }}" method="get">
+                    <button type="submit">Reset Anomalies</button>
+                </form>
+            </div>
+
+            <!-- Exit to Settings Button Group -->
+            <div class="button-group exit-settings">
+                <form action="{{ url_for('settings') }}" method="get">
+                    <button type="submit">Exit to Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exit to Main Menu Button (Fixed at Bottom Right) -->
+    <div class="button-group exit-main-menu">
+        <form action="{{ url_for('welcome') }}" method="get">
+            <button type="submit">Exit to Main Menu</button>
+        </form>
+    </div>
+
+    <script>
+        // Function to hide flash messages after 5 seconds
+        window.onload = function() {
+            setTimeout(function() {
+                var flashMessages = document.getElementById('flash-messages');
+                if (flashMessages) {
+                    flashMessages.style.display = 'none';
+                }
+            }, 5000); // 5000 milliseconds = 5 seconds
+        };
+    </script>
+</body>
+</html>

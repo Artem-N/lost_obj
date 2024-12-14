@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Anomaly Detection System{% endblock %}
+
+{% block head %}
+    <style>
+        /* Specific styles for welcome.html */
+        .welcome-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .overlay {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 60px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 3em;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        p {
+            font-size: 1.5em;
+            margin-bottom: 40px;
+            color: #ecf0f1;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .button-group form {
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .button-group button {
+            width: 100%;
+            padding: 15px;
+            background-color: #3498db; /* Blue color */
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button-group button:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
+        }
+
+        /* Check Camera Button Styling */
+        .check-camera-button {
+            background-color: #2ecc71; /* Green color */
+        }
+
+        .check-camera-button:hover {
+            background-color: #27ae60;
+        }
+
+        /* Exit to Main Menu Button */
+        .exit-main-menu {
+            padding: 20px 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            text-align: center;
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .exit-main-menu form {
+            display: inline-block;
+        }
+
+        .exit-main-menu button {
+            padding: 12px 25px;
+            background-color: #e74c3c; /* Red color */
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .exit-main-menu button:hover {
+            background-color: #c0392b;
+            transform: scale(1.02);
+        }
+
+        /* Responsive Design for welcome.html */
+        @media (max-width: 600px) {
+            .overlay {
+                padding: 40px 20px;
+            }
+            h1 {
+                font-size: 2.5em;
+            }
+            p {
+                font-size: 1.2em;
+                margin-bottom: 30px;
+            }
+            .button-group {
+                gap: 10px;
+            }
+            .button-group button {
+                font-size: 1em;
+                padding: 12px;
+            }
+            .exit-main-menu button {
+                width: 100%;
+                padding: 10px 0;
+                font-size: 1em;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="welcome-container">
+        <div class="overlay">
+            <h1>Anomaly Detection System</h1>
+            <p>Welcome! Use the buttons below to navigate through the system.</p>
+
+            <div class="button-group">
+                <!-- Start the Program Button -->
+                <form action="{{ url_for('video_page') }}" method="get">
+                    <button type="submit">Start the Program</button>
+                </form>
+
+                <!-- Help Button -->
+                <form action="{{ url_for('help_page') }}" method="get">
+                    <button type="submit">Help</button>
+                </form>
+
+                <!-- Check the Camera Button -->
+                <form action="{{ url_for('check_camera') }}" method="post">
+                    {{ form.csrf_token }}
+                    <button type="submit" class="check-camera-button">Check the Camera</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // Function to hide each flash message after 5 seconds
+        window.onload = function() {
+            var messages = document.querySelectorAll('.flash-message');
+            messages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-20px)';
+                    // Optionally, remove the element after transition
+                    setTimeout(function() {
+                        message.remove();
+                    }, 500); // Match the CSS transition duration
+                }, 5000); // 5000 milliseconds = 5 seconds
+            });
+        };
+    </script>
+{% endblock %}
