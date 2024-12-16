@@ -77,6 +77,15 @@
             background-color: #27ae60;
         }
 
+        /* Camera Settings Button Styling */
+        .camera-settings-button {
+            background-color: #f39c12; /* Orange color */
+        }
+
+        .camera-settings-button:hover {
+            background-color: #e67e22;
+        }
+
         /* Exit to Main Menu Button */
         .exit-main-menu {
             padding: 20px 0;
@@ -164,9 +173,20 @@
                     {{ form.csrf_token }}
                     <button type="submit" class="check-camera-button">Check the Camera</button>
                 </form>
+
+                <!-- Camera Settings Button -->
+                <form action="{{ url_for('settings', redirect_to='welcome') }}" method="get">
+                    <button type="submit" class="camera-settings-button">Camera Settings</button>
+                </form>
             </div>
         </div>
 
+        <!-- Exit to Main Menu Button -->
+        <div class="exit-main-menu">
+            <form action="{{ url_for('welcome') }}" method="get">
+                <button type="submit">Exit to Main Menu</button>
+            </form>
+        </div>
     </div>
 {% endblock %}
 

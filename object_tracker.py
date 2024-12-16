@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 
-
 class ObjectTracker:
     def __init__(self, persistence_threshold=100, match_distance=50, min_size=10):
         self.persistence_threshold = persistence_threshold

@@ -12,11 +12,21 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background: url("{{ url_for('static', filename='background.png') }}") no-repeat center center fixed;
-            background-size: cover;
-            font-family: sans-serif;
+            font-family: Arial, sans-serif;
+            /* Animated Gradient Background */
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .settings-form {
@@ -26,6 +36,7 @@
             max-width: 500px;
             margin: auto;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1; /* Ensure form is above background effects */
         }
 
         .settings-form h2 {
@@ -79,7 +90,9 @@
         .exit-main-menu {
             margin-top: auto; /* Pushes the button to the bottom */
             text-align: center;
-            margin-top: 40px;
+            padding: 20px 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
         }
 
         .exit-main-menu form {
@@ -127,26 +140,37 @@
     <div class="settings-form">
         <h2>Settings</h2>
         <form method="POST" action="{{ url_for('settings') }}">
-            <label for="persistence_threshold">Persistence Threshold:</label>
-            <input type="number" id="persistence_threshold" name="persistence_threshold" min="1" value="{{ persistence_threshold }}" required>
+            {{ form.hidden_tag() }} <!-- CSRF Token and Hidden 'redirect_to' Field -->
+            {{ form.redirect_to() }} <!-- Hidden 'redirect_to' Field -->
 
-            <label for="min_size">Minimum Object Size:</label>
-            <input type="number" id="min_size" name="min_size" min="1" value="{{ min_size }}" required>
+            <!-- Existing form fields -->
+            <label for="{{ form.persistence_threshold.id }}">{{ form.persistence_threshold.label.text }}:</label>
+            {{ form.persistence_threshold(class="form-control", id="persistence_threshold") }}
 
-            <label for="use_default_camera_params">
-                <input type="checkbox" id="use_default_camera_params" name="use_default_camera_params" {% if use_default_camera_params == 'on' %}checked{% endif %}>
-                Use Default Camera Parameters
+            <label for="{{ form.min_size.id }}">{{ form.min_size.label.text }}:</label>
+            {{ form.min_size(class="form-control", id="min_size") }}
+
+            <label for="{{ form.use_default_camera_params.id }}">
+                {{ form.use_default_camera_params() }}
+                {{ form.use_default_camera_params.label.text }}
             </label>
 
-            <div id="camera_params" {% if use_default_camera_params == 'on' %}style="display:none;"{% endif %}>
-                <label for="video_width">Video Width:</label>
-                <input type="number" id="video_width" name="video_width" min="1" value="{{ video_width }}" required>
+            <div id="camera_params" {% if form.use_default_camera_params.data %}style="display:none;"{% endif %}>
+                <label for="{{ form.video_width.id }}">{{ form.video_width.label.text }}:</label>
+                {{ form.video_width(class="form-control", id="video_width") }}
 
-                <label for="video_height">Video Height:</label>
-                <input type="number" id="video_height" name="video_height" min="1" value="{{ video_height }}" required>
+                <label for="{{ form.video_height.id }}">{{ form.video_height.label.text }}:</label>
+                {{ form.video_height(class="form-control", id="video_height") }}
             </div>
 
-            <button type="submit">Save Settings</button>
+            <!-- Display form validation errors -->
+            {% for field, errors in form.errors.items() %}
+                {% for error in errors %}
+                    <div class="error" style="color: red; margin-top: 5px;">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+
+            <button type="submit">{{ form.submit.label.text }}</button>
         </form>
     </div>
 
@@ -161,7 +185,7 @@
         // Function to toggle camera parameters input fields based on checkbox
         function toggleCameraParams() {
             var cameraParams = document.getElementById('camera_params');
-            var checkbox = document.getElementById('use_default_camera_params');
+            var checkbox = document.getElementById('{{ form.use_default_camera_params.id }}');
             if (checkbox.checked) {
                 cameraParams.style.display = 'none';
             } else {
@@ -170,10 +194,12 @@
         }
 
         // Add event listener for checkbox change
-        document.getElementById('use_default_camera_params').addEventListener('change', toggleCameraParams);
+        document.getElementById('{{ form.use_default_camera_params.id }}').addEventListener('change', toggleCameraParams);
 
         // Call the function on page load to set the correct initial state
         window.onload = toggleCameraParams;
     </script>
 </body>
 </html>
+
+

@@ -1,7 +1,8 @@
 from flask import Flask, render_template, Response, redirect, url_for, request, session, flash
 from flask_wtf import FlaskForm
-from wtforms import SubmitField
 from flask_wtf import CSRFProtect
+from wtforms import IntegerField, BooleanField, SubmitField, HiddenField
+from wtforms.validators import DataRequired, NumberRange
 import cv2
 from video_anomaly_detector import VideoAnomalyDetector  # Ensure this does not define conflicting routes
 import threading
@@ -19,8 +20,37 @@ csrf = CSRFProtect(app)
 detector = None
 detector_lock = threading.Lock()
 
+
+# Define the SettingsForm
+# Define the SettingsForm
+class SettingsForm(FlaskForm):
+    persistence_threshold = IntegerField(
+        'Persistence Threshold',
+        validators=[DataRequired(message="Persistence Threshold is required."), NumberRange(min=1, message="Must be at least 1.")]
+    )
+    min_size = IntegerField(
+        'Minimum Object Size',
+        validators=[DataRequired(message="Minimum Object Size is required."), NumberRange(min=1, message="Must be at least 1.")]
+    )
+    use_default_camera_params = BooleanField('Use Default Camera Parameters')
+    video_width = IntegerField(
+        'Video Width',
+        validators=[NumberRange(min=1, message="Must be at least 1.")],
+        default=640
+    )
+    video_height = IntegerField(
+        'Video Height',
+        validators=[NumberRange(min=1, message="Must be at least 1.")],
+        default=480
+    )
+    redirect_to = HiddenField('Redirect To')  # Renamed Hidden Field
+    submit = SubmitField('Save Settings')
+
+
+
 class CheckCameraForm(FlaskForm):
     submit = SubmitField('Check the Camera')
+
 
 def gen_frames():
     """Generator function that yields video frames for the video_feed route."""
@@ -81,6 +111,7 @@ def gen_frames():
         if frame_count % 50 == 0:
             print("50 frames processed.")
 
+
 def gen_check_camera_frames():
     """Generator function that yields camera frames for the check_camera_feed route."""
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Adjust the index if needed
@@ -132,10 +163,12 @@ def welcome():
             return redirect(url_for('check_camera_page'))
     return render_template('welcome.html', form=form)
 
+
 @app.route('/check_camera_page')
 def check_camera_page():
     """Render the check camera page which displays the live video feed."""
     return render_template('check_camera.html')
+
 
 @app.route('/check_camera', methods=['POST'])
 def check_camera():
@@ -151,50 +184,40 @@ def check_camera():
             flash('Camera is accessible.', 'success')
             return redirect(url_for('check_camera_page'))
 
+
 @app.route('/check_camera_feed')
 def check_camera_feed():
     """Provide the video feed as a multipart response for the check camera page."""
     return Response(gen_check_camera_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
-    """Handle the settings page where users can configure parameters."""
     global detector
-    if request.method == 'POST':
+    form = SettingsForm()
+
+    if form.validate_on_submit():
+        redirect_to_page = form.redirect_to.data or 'welcome'  # Default to 'welcome' if 'redirect_to' is not provided
         with detector_lock:
-            # If a detector already exists, release it first
+            # Release existing detector if any
             if detector is not None:
                 detector.cap.release()
                 detector = None
                 print("Old detector released.")
-                flash('Old detector released.', 'success')  # Optional: Inform user
+                flash('Old detector released.', 'success')
 
-            # Retrieve form parameters with validation
-            try:
-                persistence_threshold = int(request.form.get('persistence_threshold', 100))
-                min_size = int(request.form.get('min_size', 10))
-            except ValueError:
-                print("Invalid input for persistence_threshold or min_size.")
-                flash('Invalid input for Persistence Threshold or Minimum Object Size.', 'error')
-                return redirect(url_for('settings'))
-
-            # Check if the user wants to use default camera parameters
-            use_default_camera = request.form.get('use_default_camera_params', 'off') == 'on'
+            # Retrieve and validate form data
+            persistence_threshold = form.persistence_threshold.data
+            min_size = form.min_size.data
+            use_default_camera = form.use_default_camera_params.data
 
             if use_default_camera:
-                # Use default video dimensions
                 video_width = 640
                 video_height = 480
             else:
-                try:
-                    # Use user-provided video dimensions
-                    video_width = int(request.form.get('video_width', 640))
-                    video_height = int(request.form.get('video_height', 480))
-                except ValueError:
-                    print("Invalid input for video_width or video_height.")
-                    flash('Invalid input for Video Width or Video Height.', 'error')
-                    return redirect(url_for('settings'))
+                video_width = form.video_width.data
+                video_height = form.video_height.data
 
             # Store parameters in the session
             session['persistence_threshold'] = persistence_threshold
@@ -203,7 +226,7 @@ def settings():
             session['video_height'] = video_height
 
             # Initialize the detector with the chosen settings
-            match_distance = 50  # This can also be made configurable if desired
+            match_distance = 50  # Can be made configurable if desired
             try:
                 detector = VideoAnomalyDetector(
                     video_source=0,
@@ -220,23 +243,30 @@ def settings():
                 flash('Error initializing video detector. Please try again.', 'error')
                 return redirect(url_for('settings'))
 
-        # Redirect to the video page after settings are saved
-        return redirect(url_for('video_page'))
+        # Redirect based on the 'redirect_to' parameter
+        if redirect_to_page == 'video':
+            return redirect(url_for('video_page'))
+        else:
+            return redirect(url_for('welcome'))
     else:
-        # Retrieve current settings from the session or use defaults
-        persistence_threshold = session.get('persistence_threshold', 100)
-        min_size = session.get('min_size', 10)
-        video_width = session.get('video_width', 640)
-        video_height = session.get('video_height', 480)
-        use_default_camera_params = 'on' if (video_width == 640 and video_height == 480) else 'off'
+        if request.method == 'GET':
+            # Retrieve 'redirect_to' from query parameters; default to 'welcome'
+            redirect_to_page = request.args.get('redirect_to', 'welcome')
+            form.redirect_to.data = redirect_to_page  # Set the hidden 'redirect_to' field
 
-        # Render the settings form with current settings
-        return render_template('settings.html',
-                               persistence_threshold=persistence_threshold,
-                               min_size=min_size,
-                               video_width=video_width,
-                               video_height=video_height,
-                               use_default_camera_params=use_default_camera_params)
+            # Pre-populate form with existing session data
+            form.persistence_threshold.data = session.get('persistence_threshold', 100)
+            form.min_size.data = session.get('min_size', 10)
+            video_width = session.get('video_width', 640)
+            video_height = session.get('video_height', 480)
+            form.video_width.data = video_width
+            form.video_height.data = video_height
+            form.use_default_camera_params.data = (video_width == 640 and video_height == 480)
+
+    # Render the settings form with the form object
+    return render_template('settings.html', form=form)
+
+
 
 @app.route('/video')
 def video_page():
@@ -273,6 +303,7 @@ def video_page():
     # Render the video page with the current baseline status
     return render_template('video.html', baseline_set=(detector.baseline_gray is not None))
 
+
 @app.route('/video_feed')
 def video_feed():
     """Provide the video feed as a multipart response."""
@@ -283,6 +314,7 @@ def video_feed():
             return "No video detector initialized.", 500
     return Response(gen_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 @app.route('/set_baseline')
 def set_baseline():
@@ -322,6 +354,7 @@ def set_baseline():
 
     return redirect(url_for('video_page'))
 
+
 @app.route('/reset_baseline')
 def reset_baseline():
     """Reset the baseline and clear tracked objects."""
@@ -340,6 +373,7 @@ def reset_baseline():
         flash('Baseline and anomalies have been successfully reset.', 'success')
 
     return redirect(url_for('video_page'))
+
 
 @app.route('/reset_anomalies')
 def reset_anomalies():

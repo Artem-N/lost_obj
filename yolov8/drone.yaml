@@ -1,6 +1,0 @@
-train: "C:\\Users\\User\\Desktop\\dataset\\train"
-val: "C:\\Users\\User\\Desktop\\dataset\\valid"
-
-nc: 4
-
-names: ['drone', 'plane', 'bird', 'helicopter']

@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <title>Anomaly Detection Video</title>
     <style>
-        /* Existing styles */
-
         /* Reset some default styles */
         * {
             box-sizing: border-box;
@@ -172,6 +170,8 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             opacity: 0;
             animation: slideDown 0.5s forwards;
+            display: flex;
+            align-items: center;
         }
 
         .flash-message.success {
@@ -180,6 +180,11 @@
 
         .flash-message.error {
             background-color: #c0392b; /* Red */
+        }
+
+        .flash-message i {
+            margin-right: 10px;
+            font-size: 1.2em;
         }
 
         @keyframes slideDown {
@@ -223,6 +228,8 @@
             }
         }
     </style>
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTTXRNv6Uy1k5DqaXv3N7e1AZHlsICFlJj8C5w9r5nW8EUsQZFsBjV4YPVYIl1HkVsskLve6TA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
     <!-- Flash Message Pop-up -->
@@ -231,6 +238,11 @@
             <div id="flash-messages">
                 {% for category, message in messages %}
                     <div class="flash-message {{ category }}">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif category == 'error' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% endif %}
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -270,19 +282,19 @@
                 </form>
 
                 <!-- Reset Baseline button -->
-                <form action="{{ url_for('reset_baseline') }}" method="get">
+                <form action="{{ url_for('reset_baseline') }}" method="get" onsubmit="return confirm('Are you sure you want to reset the baseline? This action cannot be undone.');">
                     <button type="submit">Reset Baseline</button>
                 </form>
 
                 <!-- Reset Anomalies button -->
-                <form action="{{ url_for('reset_anomalies') }}" method="get">
+                <form action="{{ url_for('reset_anomalies') }}" method="get" onsubmit="return confirm('Are you sure you want to reset all anomalies? This action cannot be undone.');">
                     <button type="submit">Reset Anomalies</button>
                 </form>
             </div>
 
-            <!-- Exit to Settings Button Group -->
+            <!-- Exit to Settings Button Group with next=video -->
             <div class="button-group exit-settings">
-                <form action="{{ url_for('settings') }}" method="get">
+                <form action="{{ url_for('settings', redirect_to='video') }}" method="get">
                     <button type="submit">Exit to Settings</button>
                 </form>
             </div>
