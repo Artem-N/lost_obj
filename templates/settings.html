@@ -1,34 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Settings</title>
+{% extends "base.html" %}
+
+{% block title %}Settings - Anomaly Detection System{% endblock %}
+
+{% block head %}
     <style>
-        /* Reset some default styles */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            /* Animated Gradient Background */
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
+        /* Include any additional CSS specific to settings.html here */
         .settings-form {
             background-color: rgba(255, 255, 255, 0.95);
             padding: 30px 25px;
@@ -135,8 +111,9 @@
             }
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="settings-form">
         <h2>Settings</h2>
         <form method="POST" action="{{ url_for('settings') }}">
@@ -180,7 +157,9 @@
             <button type="submit">Exit to Main Menu</button>
         </form>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         // Function to toggle camera parameters input fields based on checkbox
         function toggleCameraParams() {
@@ -199,7 +178,4 @@
         // Call the function on page load to set the correct initial state
         window.onload = toggleCameraParams;
     </script>
-</body>
-</html>
-
-
+{% endblock %}

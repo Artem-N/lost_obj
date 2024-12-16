@@ -86,43 +86,6 @@
             background-color: #e67e22;
         }
 
-        /* Exit to Main Menu Button */
-        .exit-main-menu {
-            padding: 20px 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            text-align: center;
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 800px;
-            width: 100%;
-        }
-
-        .exit-main-menu form {
-            display: inline-block;
-        }
-
-        .exit-main-menu button {
-            padding: 12px 25px;
-            background-color: #e74c3c; /* Red color */
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1.1em;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .exit-main-menu button:hover {
-            background-color: #c0392b;
-            transform: scale(1.02);
-        }
-
         /* Responsive Design for welcome.html */
         @media (max-width: 600px) {
             .overlay {
@@ -179,13 +142,6 @@
                     <button type="submit" class="camera-settings-button">Camera Settings</button>
                 </form>
             </div>
-        </div>
-
-        <!-- Exit to Main Menu Button -->
-        <div class="exit-main-menu">
-            <form action="{{ url_for('welcome') }}" method="get">
-                <button type="submit">Exit to Main Menu</button>
-            </form>
         </div>
     </div>
 {% endblock %}

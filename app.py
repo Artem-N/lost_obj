@@ -199,6 +199,9 @@ def settings():
 
     if form.validate_on_submit():
         redirect_to_page = form.redirect_to.data or 'welcome'  # Default to 'welcome' if 'redirect_to' is not provided
+        flash(f"Redirecting to: {redirect_to_page}", 'info')  # Debugging Flash Message
+        print(f"Redirecting to: {redirect_to_page}")  # Debugging Print Statement
+
         with detector_lock:
             # Release existing detector if any
             if detector is not None:

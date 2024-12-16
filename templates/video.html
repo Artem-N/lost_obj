@@ -1,74 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Anomaly Detection Video</title>
+{% extends "base.html" %}
+
+{% block title %}Video - Anomaly Detection System{% endblock %}
+
+{% block head %}
     <style>
-        /* Reset some default styles */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        /* Include any additional CSS specific to video.html here */
+        /* Example: Styling for video feed and buttons */
 
-        body {
-            background: #2c3e50; /* Darker background for better contrast */
-            color: #ecf0f1; /* Light text for readability */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding-bottom: 50px; /* Space for bottom button */
-            position: relative;
-        }
-
-        header {
-            width: 100%;
-            padding: 20px 0;
-            background: #34495e; /* Slightly lighter than body for distinction */
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        header h1 {
-            font-size: 2em;
-            color: #ecf0f1;
-        }
-
-        .content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 90%;
-            max-width: 1200px;
-            margin: 30px 0;
-        }
-
-        /* Status Message Section */
-        .status-message {
-            margin-bottom: 20px;
-            font-size: 1.2em;
-            padding: 15px 25px;
-            border-radius: 5px;
-            width: 100%;
-            max-width: 800px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .status-success {
-            background-color: #27ae60; /* Green */
-            color: #ecf0f1;
-        }
-
-        .status-error {
-            background-color: #c0392b; /* Red */
-            color: #ecf0f1;
-        }
-
-        /* Video Feed Section */
         .video-section {
             width: 100%;
             display: flex;
@@ -150,65 +88,8 @@
             background-color: #e74c3c;
         }
 
-        /* Flash Message Pop-up Styles */
-        #flash-messages {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            width: 90%;
-            max-width: 600px;
-        }
-
-        .flash-message {
-            padding: 15px 25px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            color: #fff;
-            font-size: 1.1em;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            opacity: 0;
-            animation: slideDown 0.5s forwards;
-            display: flex;
-            align-items: center;
-        }
-
-        .flash-message.success {
-            background-color: #27ae60; /* Green */
-        }
-
-        .flash-message.error {
-            background-color: #c0392b; /* Red */
-        }
-
-        .flash-message i {
-            margin-right: 10px;
-            font-size: 1.2em;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         /* Responsive Design */
         @media (max-width: 768px) {
-            .content {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .video-section {
-                flex: 1 1 100%;
-            }
-
             .button-group {
                 flex-direction: column;
             }
@@ -228,28 +109,9 @@
             }
         }
     </style>
-    <!-- Include Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTTXRNv6Uy1k5DqaXv3N7e1AZHlsICFlJj8C5w9r5nW8EUsQZFsBjV4YPVYIl1HkVsskLve6TA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
-<body>
-    <!-- Flash Message Pop-up -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div id="flash-messages">
-                {% for category, message in messages %}
-                    <div class="flash-message {{ category }}">
-                        {% if category == 'success' %}
-                            <i class="fas fa-check-circle"></i>
-                        {% elif category == 'error' %}
-                            <i class="fas fa-exclamation-circle"></i>
-                        {% endif %}
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+{% endblock %}
 
+{% block content %}
     <header>
         <h1>Real-time Anomaly Detection</h1>
     </header>
@@ -292,7 +154,7 @@
                 </form>
             </div>
 
-            <!-- Exit to Settings Button Group with next=video -->
+            <!-- Exit to Settings Button Group with redirect_to=video -->
             <div class="button-group exit-settings">
                 <form action="{{ url_for('settings', redirect_to='video') }}" method="get">
                     <button type="submit">Exit to Settings</button>
@@ -307,7 +169,9 @@
             <button type="submit">Exit to Main Menu</button>
         </form>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         // Function to hide flash messages after 5 seconds
         window.onload = function() {
@@ -319,5 +183,4 @@
             }, 5000); // 5000 milliseconds = 5 seconds
         };
     </script>
-</body>
-</html>
+{% endblock %}
